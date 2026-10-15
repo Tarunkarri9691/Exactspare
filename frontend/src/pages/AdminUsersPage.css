@@ -1,0 +1,61 @@
+.admin-users-page {
+  background-color: #F8FAFC;
+  min-height: calc(100vh - 70px);
+  padding-bottom: 3rem;
+}
+
+.admin-users-container {
+  padding-top: 1.5rem;
+}
+
+.user-name-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name-cell strong {
+  color: #0A192F;
+  font-size: 0.95rem;
+}
+
+.phone-cell {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.role-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.role-customer {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.role-owner {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.role-admin {
+  background: #EDE9FE;
+  color: #6D28D9;
+}
+
+.status-suspended {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.user-activity-stat {
+  background: #F1F5F9;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #0A192F;
+}

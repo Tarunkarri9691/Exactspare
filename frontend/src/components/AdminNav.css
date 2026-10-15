@@ -1,0 +1,55 @@
+/* AdminNav.css - EXACTSPARE Admin Sub-navigation */
+.admin-subnav-root {
+  background: #0a192f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  position: sticky;
+  top: 68px; /* sits right beneath top navbar */
+  z-index: 99;
+}
+
+.admin-subnav-container {
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.admin-subnav-links {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 6px 0;
+}
+
+.admin-subnav-links::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-subnav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.admin-subnav-tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-subnav-tab.active {
+  color: #ffffff;
+  background: #ff6b00;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.35);
+}
+
+.tab-icon {
+  font-size: 0.95rem;
+}

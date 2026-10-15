@@ -1,7 +1,7 @@
 # EXACTSPARE — Vehicle Spare Parts Finder
 
-> **Module 7: Notifications, Customer Wishlist, Product Reviews & Ratings**  
-> Complete customer engagement and marketplace trust suite. Features a reliable in-app notification system with unread counters, persistent customer wishlists in MongoDB with vehicle compatibility specs and instant move-to-cart transfers, verified buyer reviews restricted strictly to customers with `DELIVERED` orders containing the product, complete star breakdown aggregation, review moderation, and author edit/deletion controls.
+> **Module 8: Admin Analytics, Reports, Platform Governance & Audit Oversight**  
+> Complete enterprise-grade administrative intelligence and moderation suite. Features real-time MongoDB aggregations for platform metrics, financial sales reports with Gross Merchandise Value (GMV), confirmed collected revenue, and Average Order Value (AOV); interactive SVG revenue trend lines and order status distributions; shop management with activation/deactivation reason logging; user account governance protecting the last active administrator from accidental suspension; spare part catalog moderation; customer review moderation with instant star rating recalculations; and an immutable security audit log trail.
 
 ---
 
@@ -117,12 +117,46 @@ EXACTSPARE connects three distinct platform roles with strict backend authorizat
 | `GET` | `/api/shops/my` | `OWNER` | Retrieve authenticated owner's approved shop profile |
 | `PATCH` | `/api/shops/my` | `OWNER` | Update store description, opening hours, contact details |
 
+### Admin Analytics & Platform Governance (`/api/admin`) — *Module 8*
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/admin/analytics/overview` | `ADMIN` | Authentic MongoDB overview metrics: customers, owners, shops, orders, completed revenue, GMV |
+| `GET` | `/api/admin/analytics/sales` | `ADMIN` | Timeline sales aggregation (daily/weekly/monthly), AOV, top products, top shops |
+| `GET` | `/api/admin/analytics/orders` | `ADMIN` | Order status breakdown, payment method distribution, and fulfillment stats |
+| `GET` | `/api/admin/analytics/products` | `ADMIN` | Category breakdown, vehicle types distribution, and stock availability metrics |
+| `GET` | `/api/admin/analytics/shops` | `ADMIN` | Active vs inactive shops, application states, and top inventory dealers |
+| `GET` | `/api/admin/analytics/customers` | `ADMIN` | Account status breakdown and repeat purchaser metrics |
+| `GET` | `/api/admin/shops` | `ADMIN` | Paginated shop list with search by name/owner/city and status filtering |
+| `GET` | `/api/admin/shops/:id` | `ADMIN` | Full shop dossier with application history and active listings count |
+| `PATCH` | `/api/admin/shops/:id/status` | `ADMIN` | Activate/deactivate shop with required reason, notification, and audit log |
+| `GET` | `/api/admin/shops/:id/parts` | `ADMIN` | Inspect inventory listings belonging to a specific shop |
+| `GET` | `/api/admin/users` | `ADMIN` | Paginated user accounts with search and role/status filtering |
+| `GET` | `/api/admin/users/:id` | `ADMIN` | User account profile with order count and audit trail |
+| `PATCH` | `/api/admin/users/:id/status` | `ADMIN` | Suspend/reactivate account with last-admin protection and audit logging |
+| `GET` | `/api/admin/parts` | `ADMIN` | Cross-shop spare-parts listing overview with category/status filters |
+| `PATCH` | `/api/admin/parts/:id/moderate` | `ADMIN` | Hide or restore listing with reason while preserving historical orders |
+| `GET` | `/api/admin/reviews` | `ADMIN` | Customer review moderation queue with status and rating filters |
+| `PATCH` | `/api/admin/reviews/:id/moderate` | `ADMIN` | Approve, flag, or hide reviews with automatic rating recalculation |
+| `GET` | `/api/admin/audit-logs` | `ADMIN` | Immutable, paginated security audit log with entity, action, and date filters |
+
 ---
 
 ## 5. Development & Execution (Windows PowerShell)
 
-### Run All 4 Automated Test Suites (64 Total Scenarios)
+### Run All Automated Test Suites (122 Total Scenarios Across Modules 2–8)
 ```powershell
+# Module 8: Admin Analytics, Reports & Governance Test Suite (16 Scenarios)
+cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
+npm run test:m8
+
+# Module 7: Notifications, Wishlist, Reviews & Ratings Test Suite (24 Scenarios)
+cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
+npm run test:m7
+
+# Module 6: Cart, Checkout & Order Management Test Suite (18 Scenarios)
+cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
+npm run test:m6
+
 # Module 5: Location-Based Search Test Suite (17 Scenarios)
 cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
 npm run test:m5
@@ -174,6 +208,26 @@ npm run build
 ---
 
 ## 6. Verification Results
+
+### Module 8: Admin Analytics, Reports & Governance Test Suite (16/16 Passed — 100%)
+```text
+✔ [PASS 1] Admin successfully viewed overview dashboard with authentic MongoDB aggregates
+✔ [PASS 2] Access control verified: Customers and Shop Owners strictly blocked from Admin APIs (HTTP 403)
+✔ [PASS 3] Sales analytics accurately reflected delivered orders (Completed: ₹35,000)
+✔ [PASS 4] Order status distribution accurately segmented DELIVERED vs other states
+✔ [PASS 5] Products analytics categorized parts across vehicle types and inventory stock metrics
+✔ [PASS 6] Admin successfully deactivated shop with recorded compliance reason
+✔ [PASS 7] Integrity check: Products from deactivated shops are strictly excluded from public search
+✔ [PASS 8] Admin successfully reactivated shop back to active marketplace state
+✔ [PASS 9] Admin successfully suspended and reactivated user account with documented reasons
+✔ [PASS 10] Critical safety rule enforced: Accidental suspension of the last active platform administrator strictly rejected (HTTP 400)
+✔ [PASS 11] Admin successfully moderated and unpublished suspicious spare part listing
+✔ [PASS 12] Admin successfully restored verified spare part listing to catalog
+✔ [PASS 13] Admin hid inappropriate review; SparePart rating automatically recalculated (totalReviews: 0)
+✔ [PASS 14] Platform audit log successfully recorded 10 administrative events
+✔ [PASS 15] Cross-role security verified: Ordinary users denied access to Audit Logs (HTTP 403)
+✔ [PASS 16] Zero regressions: Modules 1–7 (Auth, Inventory, Orders, Notifications, Wishlist) operate seamlessly
+```
 
 ### Module 7: Notifications, Wishlist, Reviews & Ratings Test Suite (24/24 Passed — 100%)
 ```text

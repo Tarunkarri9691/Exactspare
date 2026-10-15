@@ -36,6 +36,9 @@ const notificationSchema = new mongoose.Schema(
         'ORDER_STATUS_UPDATED',
         'REVIEW_SUBMITTED',
         'WISHLIST_ALERT',
+        'SHOP_STATUS_UPDATED',
+        'ACCOUNT_STATUS_UPDATED',
+        'LISTING_MODERATED',
         'SYSTEM'
       ],
       default: 'SYSTEM'

@@ -1,0 +1,79 @@
+.admin-reviews-page {
+  background-color: #F8FAFC;
+  min-height: calc(100vh - 70px);
+  padding-bottom: 3rem;
+}
+
+.admin-reviews-container {
+  padding-top: 1.5rem;
+}
+
+.customer-info-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-info-cell strong {
+  color: #0A192F;
+}
+
+.part-link-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.part-link-cell strong {
+  color: #0A192F;
+}
+
+.review-comment-col {
+  max-width: 320px;
+}
+
+.review-stars-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.review-stars {
+  color: #F59E0B;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.rating-num {
+  font-size: 0.75rem;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.review-text {
+  font-size: 0.85rem;
+  color: #334155;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.review-actions-wrap {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.review-quote-box {
+  background: #F8FAFC;
+  border-left: 3px solid #FF6B00;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.review-quote-box p {
+  font-size: 0.85rem;
+  color: #334155;
+  margin-top: 0.25rem;
+  font-style: italic;
+}

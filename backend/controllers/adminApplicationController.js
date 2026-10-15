@@ -1,6 +1,7 @@
 import ShopApplication from '../models/ShopApplication.js';
 import Shop from '../models/Shop.js';
 import Notification from '../models/Notification.js';
+import { recordAdminAuditLog } from './adminManagementController.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -211,6 +212,20 @@ export const decideApplication = async (req, res, next) => {
       });
 
       await application.save();
+
+      // Record Audit Log
+      await recordAdminAuditLog({
+        adminId: req.user._id,
+        action: 'SHOP_APPLICATION_APPROVED',
+        entityType: 'SHOP_APPLICATION',
+        entityId: application._id,
+        reason: 'Application approved and shop activated by administrator',
+        metadata: {
+          shopName: application.shopName,
+          ownerId: application.ownerId
+        }
+      });
+
       logger.info(`Shop application ${application._id} APPROVED by admin ${req.user.email}`);
 
       return res.status(200).json({
@@ -255,6 +270,20 @@ export const decideApplication = async (req, res, next) => {
       });
 
       await application.save();
+
+      // Record Audit Log
+      await recordAdminAuditLog({
+        adminId: req.user._id,
+        action: 'SHOP_APPLICATION_REJECTED',
+        entityType: 'SHOP_APPLICATION',
+        entityId: application._id,
+        reason: reason.trim(),
+        metadata: {
+          shopName: application.shopName,
+          ownerId: application.ownerId
+        }
+      });
+
       logger.info(`Shop application ${application._id} REJECTED by admin ${req.user.email}`);
 
       return res.status(200).json({

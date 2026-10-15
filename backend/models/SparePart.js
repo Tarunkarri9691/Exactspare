@@ -128,6 +128,22 @@ const sparePartSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0
+    },
+    isModerated: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    moderationReason: {
+      type: String,
+      default: ''
+    },
+    moderatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    moderatedAt: {
+      type: Date
     }
   },
   {

@@ -1176,5 +1176,310 @@ export const deleteProductReview = async (reviewId) => {
   }
 };
 
+/**
+ * ========================================================
+ * MODULE 8: ADMIN ANALYTICS, REPORTS & PLATFORM MANAGEMENT
+ * ========================================================
+ */
+
+/**
+ * Admin Analytics Endpoints
+ */
+export const fetchAdminAnalyticsOverview = async () => {
+  try {
+    const response = await apiClient.get('/admin/analytics/overview');
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch analytics overview'
+    };
+  }
+};
+
+export const fetchAdminSalesAnalytics = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/analytics/sales', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch sales analytics'
+    };
+  }
+};
+
+export const fetchAdminOrderAnalytics = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/analytics/orders', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch order analytics'
+    };
+  }
+};
+
+export const fetchAdminProductAnalytics = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/analytics/products', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch product analytics'
+    };
+  }
+};
+
+export const fetchAdminShopAnalytics = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/analytics/shops', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch shop analytics'
+    };
+  }
+};
+
+export const fetchAdminCustomerAnalytics = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/analytics/customers', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch customer analytics'
+    };
+  }
+};
+
+/**
+ * Admin Shop Management Endpoints
+ */
+export const fetchAdminShops = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/shops', { params });
+    return {
+      success: true,
+      data: response.data?.data?.shops || [],
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load shops'
+    };
+  }
+};
+
+export const fetchAdminShopDetails = async (shopId) => {
+  try {
+    const response = await apiClient.get(`/admin/shops/${shopId}`);
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load shop details'
+    };
+  }
+};
+
+export const updateAdminShopStatus = async (shopId, isActive, reason = '') => {
+  try {
+    const response = await apiClient.patch(`/admin/shops/${shopId}/status`, { isActive, reason });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.shop
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to update shop status'
+    };
+  }
+};
+
+export const fetchAdminShopParts = async (shopId, params = {}) => {
+  try {
+    const response = await apiClient.get(`/admin/shops/${shopId}/parts`, { params });
+    return {
+      success: true,
+      data: response.data?.data?.parts || [],
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch shop inventory'
+    };
+  }
+};
+
+/**
+ * Admin User Management Endpoints
+ */
+export const fetchAdminUsers = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/users', { params });
+    return {
+      success: true,
+      data: response.data?.data?.users || response.data?.users || [],
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load users'
+    };
+  }
+};
+
+export const fetchAdminUserDetails = async (userId) => {
+  try {
+    const response = await apiClient.get(`/admin/users/${userId}`);
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load user details'
+    };
+  }
+};
+
+export const updateAdminUserStatus = async (userId, accountStatus, reason = '') => {
+  try {
+    const response = await apiClient.patch(`/admin/users/${userId}/status`, { accountStatus, reason });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.user
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to update user status'
+    };
+  }
+};
+
+/**
+ * Admin Spare Part Moderation Endpoints
+ */
+export const fetchAdminParts = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/parts', { params });
+    return {
+      success: true,
+      data: response.data?.data?.parts || [],
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load spare parts'
+    };
+  }
+};
+
+export const moderateAdminPart = async (partId, isPublished, reason = '') => {
+  try {
+    const response = await apiClient.patch(`/admin/parts/${partId}/moderate`, { isPublished, reason });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.part
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to moderate spare part'
+    };
+  }
+};
+
+/**
+ * Admin Review Moderation Endpoints
+ */
+export const fetchAdminReviews = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/reviews', { params });
+    return {
+      success: true,
+      data: response.data?.data?.reviews || [],
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load reviews'
+    };
+  }
+};
+
+export const moderateAdminReview = async (reviewId, moderationStatus, reason = '') => {
+  try {
+    const response = await apiClient.patch(`/admin/reviews/${reviewId}/moderate`, { moderationStatus, reason });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.review
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to moderate review'
+    };
+  }
+};
+
+/**
+ * Admin Audit Logs Endpoint
+ */
+export const fetchAdminAuditLogs = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/admin/audit-logs', { params });
+    return {
+      success: true,
+      data: response.data?.data?.logs || [],
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch audit logs'
+    };
+  }
+};
+
 export default apiClient;
+
 

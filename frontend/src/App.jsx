@@ -43,6 +43,14 @@ import OwnerOrdersPage from './pages/OwnerOrdersPage';
 import WishlistPage from './pages/WishlistPage';
 import NotificationsPage from './pages/NotificationsPage';
 
+// Module 8 Pages: Admin Analytics, Reports, Moderation & Platform Management
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import AdminShopsPage from './pages/AdminShopsPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminPartsModerationPage from './pages/AdminPartsModerationPage';
+import AdminReviewModerationPage from './pages/AdminReviewModerationPage';
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -103,7 +111,13 @@ function App() {
                   {/* Role-Protected Administrator Routes */}
                   <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                     <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+                    <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
                     <Route path="admin/applications" element={<AdminApplicationsPage />} />
+                    <Route path="admin/shops" element={<AdminShopsPage />} />
+                    <Route path="admin/users" element={<AdminUsersPage />} />
+                    <Route path="admin/moderation/parts" element={<AdminPartsModerationPage />} />
+                    <Route path="admin/moderation/reviews" element={<AdminReviewModerationPage />} />
+                    <Route path="admin/audit-logs" element={<AdminAuditLogsPage />} />
                   </Route>
 
                   {/* Catch-all 404 Route */}

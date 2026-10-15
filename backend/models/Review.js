@@ -49,8 +49,20 @@ const reviewSchema = new mongoose.Schema(
     },
     moderationStatus: {
       type: String,
-      enum: ['APPROVED', 'PENDING', 'FLAGGED'],
-      default: 'APPROVED'
+      enum: ['APPROVED', 'PENDING', 'FLAGGED', 'HIDDEN'],
+      default: 'APPROVED',
+      index: true
+    },
+    moderationReason: {
+      type: String,
+      default: ''
+    },
+    moderatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    moderatedAt: {
+      type: Date
     }
   },
   {

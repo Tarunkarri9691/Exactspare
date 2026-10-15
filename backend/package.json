@@ -13,7 +13,8 @@
     "test:m4": "node scripts/testInventoryModule.js",
     "test:m5": "node scripts/testLocationSearchModule.js",
     "test:m6": "node scripts/testOrderModule.js",
-    "test:m7": "node scripts/testModule7.js"
+    "test:m7": "node scripts/testModule7.js",
+    "test:m8": "node scripts/testModule8.js"
   },
   "keywords": [
     "exactspare",

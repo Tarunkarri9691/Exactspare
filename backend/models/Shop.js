@@ -69,6 +69,17 @@ const shopSchema = new mongoose.Schema(
       default: true,
       index: true
     },
+    deactivationReason: {
+      type: String,
+      default: ''
+    },
+    deactivatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    deactivatedAt: {
+      type: Date
+    },
     approvedAt: {
       type: Date,
       default: Date.now

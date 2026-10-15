@@ -1,203 +1,293 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  fetchAdminDashboardData, 
-  fetchAdminUsersList, 
-  fetchAdminApplications 
-} from '../services/api';
+import { fetchAdminAnalyticsOverview } from '../services/api';
+import AdminNav from '../components/AdminNav';
 import './AdminDashboardPage.css';
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [usersList, setUsersList] = useState([]);
-  const [pendingAppsCount, setPendingAppsCount] = useState(0);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState(null);
 
-  useEffect(() => {
-    const loadAdminData = async () => {
-      setLoading(true);
-      setError(null);
-
-      const [statsRes, usersRes, appsRes] = await Promise.all([
-        fetchAdminDashboardData(),
-        fetchAdminUsersList(),
-        fetchAdminApplications({ status: 'PENDING', limit: 1 })
-      ]);
-
-      if (statsRes.success) {
-        setStats(statsRes.data?.stats);
+  const loadOverview = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAdminAnalyticsOverview();
+      if (res.success && res.data) {
+        setData(res.data);
+        setLastRefreshTime(new Date());
       } else {
-        setError(statsRes.error);
+        setError(res.error || 'Failed to fetch platform analytics overview.');
       }
-
-      if (usersRes.success) {
-        setUsersList(usersRes.data || []);
-      }
-
-      if (appsRes.success) {
-        setPendingAppsCount(appsRes.data?.stats?.pending ?? 0);
-      }
-
+    } catch {
+      setError('Network communication error while loading overview.');
+    } finally {
       setLoading(false);
-    };
-
-    loadAdminData();
+    }
   }, []);
 
+  useEffect(() => {
+    loadOverview();
+  }, [loadOverview]);
+
+  const formatPrice = (val) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(val || 0);
+  };
+
+  const users = data?.users || {};
+  const shops = data?.shops || {};
+  const inventory = data?.inventory || {};
+  const orders = data?.orders || {};
+  const revenue = data?.revenue || {};
+
   return (
-    <div className="dashboard-page-root">
-      <div className="container dashboard-container">
+    <div className="admin-page-root">
+      {/* Top Admin Sub-navigation */}
+      <AdminNav />
+
+      <div className="container admin-container">
         {/* Welcome Header */}
-        <div className="dashboard-welcome-card admin-welcome-card">
-          <div className="welcome-info">
-            <div className="welcome-badge-row">
-              <span className="badge badge-info">Role: {user?.role}</span>
-              <span className="badge badge-success">Security State: INITIALIZED VIA CLI</span>
+        <div className="admin-header-card">
+          <div className="admin-header-main">
+            <div className="admin-badge-row">
+              <span className="badge badge-navy">Platform Administrator</span>
+              <span className="badge badge-success">CLI Authenticated</span>
+              <span className="badge badge-orange">Module 8 • Analytics & Management</span>
             </div>
-            <h1 className="welcome-title">Administrative Operations Center</h1>
-            <p className="welcome-subtitle">
-              Welcome, {user?.name}. Manage platform integrity, user roles, and vendor verification.
+            <h1 className="admin-header-title">Platform Operations Dashboard</h1>
+            <p className="admin-header-subtitle">
+              Live enterprise overview of user spectrum, merchant shops, inventory catalog, order status pipelines, and confirmed revenues.
             </p>
           </div>
-          <div className="user-contact-mini">
-            <div className="contact-detail-item">
-              <span className="contact-label">Admin Email:</span>
-              <span className="contact-val">{user?.email}</span>
-            </div>
-            <div className="contact-detail-item">
-              <span className="contact-label">Status:</span>
-              <span className="contact-val">{user?.accountStatus || 'ACTIVE'}</span>
-            </div>
+
+          <div className="admin-header-refresh">
+            <button
+              type="button"
+              className="btn btn-outline-white refresh-btn"
+              onClick={loadOverview}
+              disabled={loading}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className={loading ? 'spin-icon' : ''}>
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>{loading ? 'Refreshing...' : 'Refresh Data'}</span>
+            </button>
+            {lastRefreshTime && (
+              <span className="last-refreshed-text">
+                Last refreshed: {lastRefreshTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            )}
           </div>
         </div>
 
         {error && (
-          <div className="auth-alert error-alert">
+          <div className="auth-alert error-alert" style={{ marginBottom: '24px' }}>
             <span>{error}</span>
           </div>
         )}
 
-        {/* Module 3 Active Hero Banner: Shop Application Reviews */}
-        <div className="admin-governance-card active-module-banner fade-in">
-          <div className="governance-icon">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              <polyline points="9 12 11 14 15 10"></polyline>
-            </svg>
-          </div>
-          <div className="governance-content">
-            <div className="governance-title-row">
-              <h3>Shop-Owner Application Reviews & Compliance Center</h3>
-              {pendingAppsCount > 0 ? (
-                <span className="badge badge-orange">{pendingAppsCount} Awaiting Review</span>
-              ) : (
-                <span className="badge badge-success">All Applications Reviewed</span>
-              )}
+        {/* Financial Revenue Callout Banner */}
+        <div className="revenue-hero-grid">
+          <div className="revenue-hero-card completed-revenue">
+            <div className="rev-card-top">
+              <span className="rev-label">Completed Sales Revenue</span>
+              <span className="rev-icon">💰</span>
             </div>
-            <p>
-              Inspect submitted merchant applications, verify physical storefront photos and OpenStreetMap coordinates, download private trade license documents, and issue binding approvals, rejections, or correction requests.
+            <div className="rev-amount">{loading ? '...' : formatPrice(revenue.completedRevenue)}</div>
+            <p className="rev-desc">
+              Confirmed collected funds from <strong>DELIVERED</strong> orders and verified online payments.
             </p>
-            <div className="governance-action-row">
-              <Link to="/admin/applications" className="btn btn-primary" id="open-compliance-center-btn">
-                Open Applications Review Queue →
-              </Link>
-              <span className="subtext">
-                Approved merchants are automatically activated and made discoverable to customers.
-              </span>
+          </div>
+
+          <div className="revenue-hero-card gross-order-value">
+            <div className="rev-card-top">
+              <span className="rev-label">Total Active Order Value (GMV)</span>
+              <span className="rev-icon">📊</span>
+            </div>
+            <div className="rev-amount">{loading ? '...' : formatPrice(revenue.totalGrossValue)}</div>
+            <p className="rev-desc">
+              Gross merchandise value of all active orders (excludes cancellations).
+            </p>
+          </div>
+
+          <div className="revenue-hero-card pending-cod">
+            <div className="rev-card-top">
+              <span className="rev-label">Pending COD Uncollected</span>
+              <span className="rev-icon">🚚</span>
+            </div>
+            <div className="rev-amount">{loading ? '...' : formatPrice(revenue.pendingCodRevenue)}</div>
+            <p className="rev-desc">
+              Orders dispatched or in fulfillment awaiting customer payment on delivery.
+            </p>
+          </div>
+        </div>
+
+        {/* Section 1: Orders Pipeline Metrics */}
+        <div className="admin-section-block">
+          <div className="section-head">
+            <h2>Order Fulfillment Pipeline</h2>
+            <Link to="/admin/analytics" className="section-link">View Sales & Order Trends →</Link>
+          </div>
+
+          <div className="metrics-quad-grid">
+            <div className="quad-card">
+              <span className="quad-title">Total Orders Placed</span>
+              <div className="quad-num">{loading ? '...' : orders.total || 0}</div>
+              <span className="quad-sub">All-time customer checkouts</span>
+            </div>
+
+            <div className="quad-card card-warning">
+              <span className="quad-title">Awaiting Processing</span>
+              <div className="quad-num text-orange">{loading ? '...' : orders.awaitingProcessing || 0}</div>
+              <span className="quad-sub">PLACED, CONFIRMED or PACKING</span>
+            </div>
+
+            <div className="quad-card card-success">
+              <span className="quad-title">Delivered Orders</span>
+              <div className="quad-num text-green">{loading ? '...' : orders.delivered || 0}</div>
+              <span className="quad-sub">Successfully handed over to buyers</span>
+            </div>
+
+            <div className="quad-card card-danger">
+              <span className="quad-title">Cancelled Orders</span>
+              <div className="quad-num text-red">{loading ? '...' : orders.cancelled || 0}</div>
+              <span className="quad-sub">Cancelled prior to dispatch</span>
             </div>
           </div>
         </div>
 
-        {/* Real Live Database Statistics */}
-        <div className="dashboard-section">
-          <div className="section-title-row">
-            <h2>Live User Spectrum Statistics</h2>
-            <span className="badge badge-navy">MongoDB Real-Time</span>
+        {/* Section 2: Shops & Compliance Metrics */}
+        <div className="admin-section-block">
+          <div className="section-head">
+            <h2>Merchant Shops & Application Compliance</h2>
+            <div className="section-actions-inline">
+              <Link to="/admin/applications" className="section-link">Review Applications →</Link>
+              <span className="sep">•</span>
+              <Link to="/admin/shops" className="section-link">Manage Shops →</Link>
+            </div>
           </div>
 
-          <div className="stats-metric-grid">
-            <div className="metric-card">
-              <div className="metric-label">Total Accounts</div>
-              <div className="metric-value">{loading ? '...' : stats?.totalUsers ?? usersList.length}</div>
-              <div className="metric-footer">MongoDB Registered Entities</div>
+          <div className="metrics-quad-grid">
+            <div className="quad-card">
+              <span className="quad-title">Total Registered Shops</span>
+              <div className="quad-num">{loading ? '...' : shops.total || 0}</div>
+              <span className="quad-sub">Platform vendor storefronts</span>
             </div>
 
-            <div className="metric-card customer-border">
-              <div className="metric-label">Registered Customers</div>
-              <div className="metric-value">{loading ? '...' : stats?.customers ?? 0}</div>
-              <div className="metric-footer">Vehicle owners & parts buyers</div>
+            <div className="quad-card card-success">
+              <span className="quad-title">Approved & Active Shops</span>
+              <div className="quad-num text-green">{loading ? '...' : shops.approvedAndActive || 0}</div>
+              <span className="quad-sub">Discoverable in location search</span>
             </div>
 
-            <div className="metric-card owner-border">
-              <div className="metric-label">Registered Shop Owners</div>
-              <div className="metric-value">{loading ? '...' : stats?.shopOwners ?? 0}</div>
-              <div className="metric-footer">Retailers on platform</div>
+            <div className="quad-card card-warning">
+              <span className="quad-title">Pending Applications</span>
+              <div className="quad-num text-orange">{loading ? '...' : shops.pendingApplications || 0}</div>
+              <span className="quad-sub">Awaiting admin compliance review</span>
             </div>
 
-            <div className="metric-card admin-border">
-              <div className="metric-label">Platform Admins</div>
-              <div className="metric-value">{loading ? '...' : stats?.administrators ?? 1}</div>
-              <div className="metric-footer">CLI-initialized governance accounts</div>
+            <div className="quad-card card-danger">
+              <span className="quad-title">Rejected Applications</span>
+              <div className="quad-num text-red">{loading ? '...' : shops.rejectedApplications || 0}</div>
+              <span className="quad-sub">Failed verification criteria</span>
             </div>
           </div>
         </div>
 
-        {/* Real Database Users Table */}
-        <div className="dashboard-section">
-          <div className="section-title-row">
-            <h2>System Accounts Registry</h2>
-            <span className="badge badge-orange">Authentic Database Records</span>
+        {/* Section 3: Inventory & Users Spectrum */}
+        <div className="admin-split-sections">
+          {/* Inventory Breakdown */}
+          <div className="split-column">
+            <div className="section-head">
+              <h2>Spare-Parts Inventory</h2>
+              <Link to="/admin/moderation/parts" className="section-link">Catalog Moderation →</Link>
+            </div>
+
+            <div className="metrics-double-grid">
+              <div className="quad-card">
+                <span className="quad-title">Total Part Listings</span>
+                <div className="quad-num">{loading ? '...' : inventory.total || 0}</div>
+                <span className="quad-sub">Catalog spare parts</span>
+              </div>
+
+              <div className="quad-card card-info">
+                <span className="quad-title">Published & Live</span>
+                <div className="quad-num text-navy">{loading ? '...' : inventory.published || 0}</div>
+                <span className="quad-sub">Active in marketplace search</span>
+              </div>
+            </div>
           </div>
 
-          <div className="admin-table-container">
-            <table className="admin-data-table">
-              <thead>
-                <tr>
-                  <th>User Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Created At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan="6" className="text-center-cell">Loading accounts...</td>
-                  </tr>
-                ) : usersList.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center-cell">No users registered yet.</td>
-                  </tr>
-                ) : (
-                  usersList.map((u) => (
-                    <tr key={u._id}>
-                      <td className="user-name-cell">
-                        <strong>{u.name}</strong>
-                      </td>
-                      <td>{u.email}</td>
-                      <td>{u.phone}</td>
-                      <td>
-                        <span className={`badge-role-tag role-${u.role.toLowerCase()}`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="badge badge-success status-pill">
-                          {u.accountStatus || 'ACTIVE'}
-                        </span>
-                      </td>
-                      <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          {/* User Spectrum */}
+          <div className="split-column">
+            <div className="section-head">
+              <h2>Registered Users Spectrum</h2>
+              <Link to="/admin/users" className="section-link">Manage Users →</Link>
+            </div>
+
+            <div className="metrics-double-grid">
+              <div className="quad-card">
+                <span className="quad-title">Registered Customers</span>
+                <div className="quad-num">{loading ? '...' : users.customers || 0}</div>
+                <span className="quad-sub">Vehicle owners & buyers</span>
+              </div>
+
+              <div className="quad-card card-warning">
+                <span className="quad-title">Shop Owners</span>
+                <div className="quad-num text-orange">{loading ? '...' : users.shopOwners || 0}</div>
+                <span className="quad-sub">Merchant vendor accounts</span>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Quick Management Shortcuts */}
+        <div className="admin-shortcuts-grid">
+          <Link to="/admin/analytics" className="admin-shortcut-card">
+            <span className="shortcut-icon">📈</span>
+            <h4>Sales & Revenue Analytics</h4>
+            <p>Inspect timeline trends, top-selling parts, and shop volume comparisons.</p>
+          </Link>
+
+          <Link to="/admin/shops" className="admin-shortcut-card">
+            <span className="shortcut-icon">🏬</span>
+            <h4>Shop Management</h4>
+            <p>Search retail partners, inspect store inventories, and toggle active status.</p>
+          </Link>
+
+          <Link to="/admin/users" className="admin-shortcut-card">
+            <span className="shortcut-icon">👥</span>
+            <h4>User Account Governance</h4>
+            <p>Filter customer and owner accounts, view order activity, or suspend violators.</p>
+          </Link>
+
+          <Link to="/admin/moderation/parts" className="admin-shortcut-card">
+            <span className="shortcut-icon">⚙️</span>
+            <h4>Spare-Parts Moderation</h4>
+            <p>Review listings, take down prohibited parts, and preserve historical order integrity.</p>
+          </Link>
+
+          <Link to="/admin/moderation/reviews" className="admin-shortcut-card">
+            <span className="shortcut-icon">⭐</span>
+            <h4>Customer Reviews Moderation</h4>
+            <p>Moderate verified buyer ratings and recalculate product review scores.</p>
+          </Link>
+
+          <Link to="/admin/audit-logs" className="admin-shortcut-card">
+            <span className="shortcut-icon">🛡️</span>
+            <h4>Platform Audit Log</h4>
+            <p>Review immutable security timestamps and records of administrative interventions.</p>
+          </Link>
         </div>
       </div>
     </div>

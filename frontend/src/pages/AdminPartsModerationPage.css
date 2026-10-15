@@ -1,0 +1,62 @@
+.admin-parts-page {
+  background-color: #F8FAFC;
+  min-height: calc(100vh - 70px);
+  padding-bottom: 3rem;
+}
+
+.admin-parts-container {
+  padding-top: 1.5rem;
+}
+
+.part-info-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.part-info-cell strong {
+  color: #0A192F;
+  font-size: 0.95rem;
+}
+
+.moderation-reason-tag {
+  font-size: 0.75rem;
+  color: #B91C1C;
+  background: #FEE2E2;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+  display: inline-block;
+  max-width: 250px;
+}
+
+.category-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: #F1F5F9;
+  color: #475569;
+  border-radius: 4px;
+}
+
+.price-stock-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.price-stock-cell strong {
+  color: #0A192F;
+}
+
+.in-stock {
+  color: #16A34A;
+}
+
+.out-of-stock {
+  color: #DC2626;
+}
+
+.rating-cell {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #D97706;
+}
