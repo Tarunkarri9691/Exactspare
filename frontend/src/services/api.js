@@ -623,4 +623,84 @@ export const fetchPublicParts = async (params = {}) => {
   }
 };
 
+/**
+ * =========================================================
+ * MODULE 5: LOCATION-BASED SPARE-PART SEARCH APIS
+ * =========================================================
+ */
+
+/**
+ * Search nearby spare parts with geospatial radius and multi-criteria filters
+ * @param {Object} params - Query parameters (q, partNumber, vehicleType, make, model, year, category, latitude, longitude, radiusKm, minPrice, maxPrice, inStock, sortBy, page, limit)
+ */
+export const searchNearbyParts = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/search/nearby-parts', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to search nearby spare parts'
+    };
+  }
+};
+
+/**
+ * Fetch dynamic search metadata from real database records (categories with counts, vehicle types, makes, models)
+ */
+export const fetchSearchMetadata = async () => {
+  try {
+    const response = await apiClient.get('/search/meta');
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch search metadata'
+    };
+  }
+};
+
+/**
+ * Fetch recently added available spare parts from real database records
+ */
+export const fetchRecentAvailableParts = async (limit = 8) => {
+  try {
+    const response = await apiClient.get('/search/recent-parts', { params: { limit } });
+    return {
+      success: true,
+      data: response.data?.data || []
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch recently added parts'
+    };
+  }
+};
+
+/**
+ * Resolve an address, city, or postal code to geographical coordinates using OpenStreetMap geocoder
+ */
+export const geocodeAddress = async (query) => {
+  try {
+    const response = await apiClient.get('/search/geocode', { params: { q: query } });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Could not resolve coordinates for this location'
+    };
+  }
+};
+
 export default apiClient;
+

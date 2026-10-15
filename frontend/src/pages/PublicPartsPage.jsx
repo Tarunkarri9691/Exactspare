@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { fetchPublicParts } from '../services/api';
+import { useSearchParams, Link } from 'react-router-dom';
+import { searchNearbyParts, fetchSearchMetadata } from '../services/api';
+import SearchResultCard from '../components/SearchResultCard';
+import SearchResultsMapView from '../components/SearchResultsMapView';
+import VehicleSelector from '../components/VehicleSelector';
+import LocationSelector from '../components/LocationSelector';
 import './PublicPartsPage.css';
 
-const VEHICLE_TYPES = ['ALL', 'Bike', 'Car', 'Scooter', 'Bicycle', 'Other'];
+const SORT_OPTIONS = [
+  { value: 'distance', label: 'Nearest First (📍 By Distance)' },
+  { value: 'price_asc', label: 'Lowest Price First (₹ Low → High)' },
+  { value: 'price_desc', label: 'Highest Price First (₹ High → Low)' },
+  { value: 'newest', label: 'Recently Added' }
+];
 
-const CATEGORIES = [
+const CATEGORIES_LIST = [
   'ALL',
   'Engine',
   'Brakes',
@@ -24,22 +33,63 @@ const CATEGORIES = [
 ];
 
 const PublicPartsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Search & Filter State
+  const [query, setQuery] = useState(searchParams.get('q') || searchParams.get('search') || '');
+  const [partNumber, setPartNumber] = useState(searchParams.get('partNumber') || '');
+  const [vehicleType, setVehicleType] = useState(searchParams.get('vehicleType') || 'ALL');
+  const [make, setMake] = useState(searchParams.get('make') || '');
+  const [model, setModel] = useState(searchParams.get('model') || '');
+  const [year, setYear] = useState(searchParams.get('year') || '');
+  const [engineDetails, setEngineDetails] = useState('');
+  const [category, setCategory] = useState(searchParams.get('category') || 'ALL');
+  const [manufacturer, setManufacturer] = useState(searchParams.get('manufacturer') || 'ALL');
+  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
+  const [inStockOnly, setInStockOnly] = useState(searchParams.get('inStock') === 'true');
+
+  // Location State
+  const initialLat = searchParams.get('latitude') ? parseFloat(searchParams.get('latitude')) : null;
+  const initialLng = searchParams.get('longitude') ? parseFloat(searchParams.get('longitude')) : null;
+  const [latitude, setLatitude] = useState(initialLat);
+  const [longitude, setLongitude] = useState(initialLng);
+  const [radiusKm, setRadiusKm] = useState(parseInt(searchParams.get('radiusKm'), 10) || 25);
+  const [locationName, setLocationName] = useState(searchParams.get('locationName') || '');
+
+  // Sorting & Pagination
+  const [sortBy, setSortBy] = useState(
+    searchParams.get('sortBy') || (initialLat && initialLng ? 'distance' : 'newest')
+  );
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page'), 10) || 1);
+
+  // UI View Mode (Grid vs Map)
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
+  const [showVehicleSelector, setShowVehicleSelector] = useState(false);
+  const [showFiltersDrawer, setShowFiltersDrawer] = useState(false);
+
+  // API Data State
   const [parts, setParts] = useState([]);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 12, pages: 1 });
-
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedVehicleType, setSelectedVehicleType] = useState('ALL');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [selectedCondition, setSelectedCondition] = useState('ALL');
-  const [inStockOnly, setInStockOnly] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
-  const [currentPage, setCurrentPage] = useState(1);
-
+  const [shops, setShops] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 12, totalPages: 0 });
+  const [locationContext, setLocationContext] = useState(null);
+  const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadParts = useCallback(async () => {
+  // Load database metadata for dynamic autocomplete / counts
+  useEffect(() => {
+    const loadMetadata = async () => {
+      const res = await fetchSearchMetadata();
+      if (res.success && res.data) {
+        setMetadata(res.data);
+      }
+    };
+    loadMetadata();
+  }, []);
+
+  // Main Search Execution
+  const executeSearch = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -50,287 +100,656 @@ const PublicPartsPage = () => {
         sortBy
       };
 
-      if (searchQuery.trim()) params.search = searchQuery.trim();
-      if (selectedVehicleType !== 'ALL') params.vehicleType = selectedVehicleType;
-      if (selectedCategory !== 'ALL') params.category = selectedCategory;
-      if (selectedCondition !== 'ALL') params.condition = selectedCondition;
-      if (inStockOnly) params.inStockOnly = true;
+      if (query.trim()) params.q = query.trim();
+      if (partNumber.trim()) params.partNumber = partNumber.trim();
+      if (vehicleType && vehicleType !== 'ALL') params.vehicleType = vehicleType;
+      if (make.trim()) params.make = make.trim();
+      if (model.trim()) params.model = model.trim();
+      if (year.trim()) params.year = year.trim();
+      if (category && category !== 'ALL') params.category = category;
+      if (manufacturer && manufacturer !== 'ALL') params.manufacturer = manufacturer;
+      if (minPrice !== '' && !isNaN(minPrice)) params.minPrice = minPrice;
+      if (maxPrice !== '' && !isNaN(maxPrice)) params.maxPrice = maxPrice;
+      if (inStockOnly) params.inStock = true;
 
-      const res = await fetchPublicParts(params);
-      if (res.success) {
-        setParts(res.data.parts || []);
-        setPagination(res.data.pagination || { total: 0, page: 1, limit: 12, pages: 1 });
-      } else {
-        setError(res.error || 'Failed to load spare parts marketplace.');
+      // Include coordinates if present
+      if (latitude !== null && longitude !== null) {
+        params.latitude = latitude;
+        params.longitude = longitude;
+        params.radiusKm = radiusKm;
       }
-    } catch {
-      setError('An error occurred while connecting to the spare parts marketplace.');
+
+      const res = await searchNearbyParts(params);
+
+      if (res.success && res.data) {
+        setParts(res.data.parts || []);
+        setShops(res.data.shops || []);
+        setPagination(res.data.pagination || { total: 0, page: 1, limit: 12, totalPages: 0 });
+        setLocationContext(res.data.locationContext || null);
+      } else {
+        setError(res.error || 'Failed to fetch search results.');
+        setParts([]);
+        setShops([]);
+      }
+    } catch (err) {
+      setError('A connection error occurred while querying spare parts.');
+      setParts([]);
+      setShops([]);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, selectedVehicleType, selectedCategory, selectedCondition, inStockOnly, sortBy]);
+  }, [
+    currentPage,
+    query,
+    partNumber,
+    vehicleType,
+    make,
+    model,
+    year,
+    category,
+    manufacturer,
+    minPrice,
+    maxPrice,
+    inStockOnly,
+    latitude,
+    longitude,
+    radiusKm,
+    sortBy
+  ]);
 
+  // Execute search when state changes
   useEffect(() => {
-    loadParts();
-  }, [loadParts]);
+    executeSearch();
+  }, [executeSearch]);
 
-  const handleSearchSubmit = (e) => {
+  // Sync state back to URL query parameters
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (query.trim()) p.set('q', query.trim());
+    if (partNumber.trim()) p.set('partNumber', partNumber.trim());
+    if (vehicleType !== 'ALL') p.set('vehicleType', vehicleType);
+    if (make.trim()) p.set('make', make.trim());
+    if (model.trim()) p.set('model', model.trim());
+    if (year.trim()) p.set('year', year.trim());
+    if (category !== 'ALL') p.set('category', category);
+    if (minPrice !== '') p.set('minPrice', minPrice);
+    if (maxPrice !== '') p.set('maxPrice', maxPrice);
+    if (inStockOnly) p.set('inStock', 'true');
+    if (latitude !== null && longitude !== null) {
+      p.set('latitude', latitude);
+      p.set('longitude', longitude);
+      p.set('radiusKm', radiusKm);
+      if (locationName) p.set('locationName', locationName);
+    }
+    p.set('sortBy', sortBy);
+    if (currentPage > 1) p.set('page', currentPage);
+
+    setSearchParams(p, { replace: true });
+  }, [
+    query,
+    partNumber,
+    vehicleType,
+    make,
+    model,
+    year,
+    category,
+    minPrice,
+    maxPrice,
+    inStockOnly,
+    latitude,
+    longitude,
+    radiusKm,
+    locationName,
+    sortBy,
+    currentPage,
+    setSearchParams
+  ]);
+
+  // Handle Search Input submit
+  const handleQuerySubmit = (e) => {
     e.preventDefault();
     setCurrentPage(1);
-    loadParts();
+    executeSearch();
   };
+
+  // Location Change Handler
+  const handleLocationChange = (loc) => {
+    setLatitude(loc.latitude);
+    setLongitude(loc.longitude);
+    setLocationName(loc.locationName || '');
+    if (loc.radiusKm) setRadiusKm(loc.radiusKm);
+    if (sortBy === 'newest') setSortBy('distance');
+    setCurrentPage(1);
+  };
+
+  // Clear Location Handler
+  const handleClearLocation = () => {
+    setLatitude(null);
+    setLongitude(null);
+    setLocationName('');
+    if (sortBy === 'distance') setSortBy('newest');
+    setCurrentPage(1);
+  };
+
+  // Vehicle Selector Change Handler
+  const handleVehicleChange = (vData) => {
+    setVehicleType(vData.vehicleType);
+    setMake(vData.make);
+    setModel(vData.model);
+    setYear(vData.year);
+    setEngineDetails(vData.engineDetails);
+    setCurrentPage(1);
+  };
+
+  // Reset All Filters
+  const handleResetFilters = () => {
+    setQuery('');
+    setPartNumber('');
+    setVehicleType('ALL');
+    setMake('');
+    setModel('');
+    setYear('');
+    setEngineDetails('');
+    setCategory('ALL');
+    setManufacturer('ALL');
+    setMinPrice('');
+    setMaxPrice('');
+    setInStockOnly(false);
+    setLatitude(null);
+    setLongitude(null);
+    setLocationName('');
+    setRadiusKm(25);
+    setSortBy('newest');
+    setCurrentPage(1);
+  };
+
+  // Check if any filter is active
+  const hasActiveFilters =
+    query.trim() ||
+    partNumber.trim() ||
+    vehicleType !== 'ALL' ||
+    make.trim() ||
+    model.trim() ||
+    year.trim() ||
+    category !== 'ALL' ||
+    manufacturer !== 'ALL' ||
+    minPrice !== '' ||
+    maxPrice !== '' ||
+    inStockOnly ||
+    latitude !== null;
 
   return (
     <div className="public-parts-page-root">
       <div className="container public-parts-container">
         {/* Marketplace Header */}
         <div className="parts-hero-banner">
-          <span className="badge badge-orange">Verified Spare Parts Directory</span>
-          <h1 className="parts-hero-title">Browse Vehicle Spare Parts & OEM Components</h1>
-          <p className="parts-hero-subtitle">
-            Find authentic replacement parts, brake components, engine systems, and electrical spares directly from verified local shops.
-          </p>
+          <div className="hero-header-row">
+            <div>
+              <span className="badge badge-orange">Location-Based Discovery • Module 5</span>
+              <h1 className="parts-hero-title">Find Vehicle Spare Parts in Nearby Shops</h1>
+              <p className="parts-hero-subtitle">
+                Compare verified local inventory, live stock availability, and straight-line distances from authentic auto spare dealers.
+              </p>
+            </div>
 
-          {/* Search Form */}
-          <form className="parts-search-form" onSubmit={handleSearchSubmit}>
-            <div className="search-field-wrap">
+            {/* View Mode Toggle (Grid vs Interactive Map) */}
+            <div className="view-mode-toggle-group">
+              <button
+                type="button"
+                className={`btn-view-toggle ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+                title="Card Grid View"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Grid</span>
+              </button>
+
+              <button
+                type="button"
+                className={`btn-view-toggle ${viewMode === 'map' ? 'active' : ''}`}
+                onClick={() => setViewMode('map')}
+                title="Interactive Map View"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                  <line x1="8" y1="2" x2="8" y2="18"></line>
+                  <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                <span>Map ({shops.length} Shops)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Search Bar */}
+          <form className="parts-search-bar-inline" onSubmit={handleQuerySubmit}>
+            <div className="search-input-wrap">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
               <input
                 type="text"
-                placeholder="Search part name, OEM SKU (e.g. Brembo P 28 076N), brand, or vehicle..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search part name, OEM code, brand, or category..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
+              {query && (
+                <button
+                  type="button"
+                  className="btn-clear-query"
+                  onClick={() => {
+                    setQuery('');
+                    setCurrentPage(1);
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <button type="submit" className="btn btn-primary search-submit-btn">
-              Search Parts
+
+            <button type="submit" className="btn btn-primary btn-search-trigger">
+              Search
+            </button>
+
+            <button
+              type="button"
+              className={`btn btn-outline btn-toggle-vehicle ${showVehicleSelector ? 'active' : ''}`}
+              onClick={() => setShowVehicleSelector(!showVehicleSelector)}
+            >
+              <span>🚗 Vehicle Compatibility</span>
+              <span className="arrow-icon">{showVehicleSelector ? '▲' : '▼'}</span>
             </button>
           </form>
 
-          {/* Vehicle Type Tabs */}
-          <div className="vehicle-tabs-row">
-            {VEHICLE_TYPES.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`vehicle-tab-btn ${selectedVehicleType === type ? 'active' : ''}`}
-                onClick={() => { setSelectedVehicleType(type); setCurrentPage(1); }}
+          {/* Collapsible Vehicle Selector */}
+          {showVehicleSelector && (
+            <div className="vehicle-selector-panel fade-in">
+              <VehicleSelector
+                vehicleType={vehicleType}
+                make={make}
+                model={model}
+                year={year}
+                engineDetails={engineDetails}
+                availableMakes={metadata?.makes || []}
+                availableModels={metadata?.models || []}
+                onChange={handleVehicleChange}
+                onReset={() => {
+                  setVehicleType('ALL');
+                  setMake('');
+                  setModel('');
+                  setYear('');
+                  setEngineDetails('');
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Location Selector */}
+          <LocationSelector
+            latitude={latitude}
+            longitude={longitude}
+            locationName={locationName}
+            radiusKm={radiusKm}
+            onLocationChange={handleLocationChange}
+            onClearLocation={handleClearLocation}
+          />
+        </div>
+
+        {/* Active Filters Summary Bar */}
+        {hasActiveFilters && (
+          <div className="active-filters-chips-bar fade-in">
+            <span className="filter-label">Active Filters:</span>
+
+            {query && (
+              <span className="filter-chip">
+                Query: "{query}"
+                <button onClick={() => setQuery('')}>✕</button>
+              </span>
+            )}
+
+            {vehicleType !== 'ALL' && (
+              <span className="filter-chip">
+                Vehicle: {vehicleType}
+                <button onClick={() => setVehicleType('ALL')}>✕</button>
+              </span>
+            )}
+
+            {make && (
+              <span className="filter-chip">
+                Make: {make}
+                <button onClick={() => setMake('')}>✕</button>
+              </span>
+            )}
+
+            {model && (
+              <span className="filter-chip">
+                Model: {model}
+                <button onClick={() => setModel('')}>✕</button>
+              </span>
+            )}
+
+            {category !== 'ALL' && (
+              <span className="filter-chip">
+                Category: {category}
+                <button onClick={() => setCategory('ALL')}>✕</button>
+              </span>
+            )}
+
+            {inStockOnly && (
+              <span className="filter-chip in-stock-chip">
+                ✓ In-Stock Only
+                <button onClick={() => setInStockOnly(false)}>✕</button>
+              </span>
+            )}
+
+            {(minPrice || maxPrice) && (
+              <span className="filter-chip">
+                ₹{minPrice || 0} - ₹{maxPrice || '∞'}
+                <button onClick={() => { setMinPrice(''); setMaxPrice(''); }}>✕</button>
+              </span>
+            )}
+
+            {latitude !== null && (
+              <span className="filter-chip location-chip">
+                📍 Within {radiusKm} km
+                <button onClick={handleClearLocation}>✕</button>
+              </span>
+            )}
+
+            <button type="button" className="btn-reset-all" onClick={handleResetFilters}>
+              Reset All
+            </button>
+          </div>
+        )}
+
+        {/* Results Bar (Count, Sort, Filter Toggle) */}
+        <div className="results-controls-row">
+          <div className="results-count-wrap">
+            <span className="results-count-number">{pagination.total}</span>
+            <span className="results-count-label">
+              {pagination.total === 1 ? 'compatible spare part' : 'compatible spare parts'} found
+            </span>
+            {locationContext?.hasLocation && (
+              <span className="nearby-location-indicator">
+                near <strong>{locationName || `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`}</strong>
+              </span>
+            )}
+          </div>
+
+          <div className="controls-right-wrap">
+            {/* Sorting Select */}
+            <div className="sort-box">
+              <label htmlFor="sort-by-select" className="sort-label">Sort:</label>
+              <select
+                id="sort-by-select"
+                className="sort-select"
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
-                {type === 'ALL' ? 'All Vehicles' : `${type} Parts`}
-              </button>
-            ))}
+                {SORT_OPTIONS.map((opt) => (
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={opt.value === 'distance' && latitude === null}
+                  >
+                    {opt.label} {opt.value === 'distance' && latitude === null ? '(Set Location)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Mobile Filter Toggle */}
+            <button
+              type="button"
+              className="btn-filters-drawer-toggle"
+              onClick={() => setShowFiltersDrawer(!showFiltersDrawer)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="21" x2="4" y2="14"></line>
+                <line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line>
+                <line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line>
+                <line x1="9" y1="8" x2="15" y2="8"></line>
+                <line x1="17" y1="16" x2="23" y2="16"></line>
+              </svg>
+              <span>Filters</span>
+            </button>
           </div>
         </div>
 
-        {/* Filter Controls Bar */}
-        <div className="parts-filters-bar">
-          <div className="filter-dropdown-item">
-            <label htmlFor="parts-cat-select">Category:</label>
-            <select
-              id="parts-cat-select"
-              className="filter-select"
-              value={selectedCategory}
-              onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c === 'ALL' ? 'All Categories' : c}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-dropdown-item">
-            <label htmlFor="parts-cond-select">Condition:</label>
-            <select
-              id="parts-cond-select"
-              className="filter-select"
-              value={selectedCondition}
-              onChange={(e) => { setSelectedCondition(e.target.value); setCurrentPage(1); }}
-            >
-              <option value="ALL">All Conditions</option>
-              <option value="NEW">New (OEM / Aftermarket)</option>
-              <option value="USED">Used / Refurbished</option>
-            </select>
-          </div>
-
-          <div className="filter-dropdown-item">
-            <label htmlFor="parts-sort-select">Sort By:</label>
-            <select
-              id="parts-sort-select"
-              className="filter-select"
-              value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
-            >
-              <option value="newest">Newest Arrivals</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="stock_desc">Highest Stock</option>
-            </select>
-          </div>
-
-          <label className="checkbox-filter-label">
-            <input
-              type="checkbox"
-              checked={inStockOnly}
-              onChange={(e) => { setInStockOnly(e.target.checked); setCurrentPage(1); }}
-            />
-            <span>In Stock Only</span>
-          </label>
-        </div>
-
-        {/* Feedback Alert */}
+        {/* Error Alert */}
         {error && (
           <div className="auth-alert error-alert fade-in">
             <span>{error}</span>
           </div>
         )}
 
-        {/* Parts Grid */}
-        {loading ? (
-          <div className="parts-loading-state">
-            <div className="auth-spinner">
-              <svg viewBox="0 0 32 32" fill="none" className="spin-cog">
-                <circle cx="16" cy="16" r="10" stroke="var(--color-orange-primary)" strokeWidth="3" strokeDasharray="3 1.5"/>
-                <circle cx="16" cy="16" r="4" fill="var(--color-navy-primary)"/>
-              </svg>
+        {/* Main Content Layout (Sidebar + Results / Map) */}
+        <div className="parts-content-layout">
+          {/* Filter Sidebar */}
+          <aside className={`parts-filter-sidebar ${showFiltersDrawer ? 'drawer-open' : ''}`}>
+            <div className="sidebar-header-row">
+              <h3>Filter Products</h3>
+              {showFiltersDrawer && (
+                <button
+                  type="button"
+                  className="btn-close-drawer"
+                  onClick={() => setShowFiltersDrawer(false)}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <p>Scanning certified spare-part inventory...</p>
-          </div>
-        ) : parts.length === 0 ? (
-          <div className="parts-empty-state">
-            <div className="empty-icon-wrap">
-              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
-              </svg>
+
+            {/* In-Stock Toggle */}
+            <div className="filter-group">
+              <label className="checkbox-toggle-label">
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(e) => {
+                    setInStockOnly(e.target.checked);
+                    setCurrentPage(1);
+                  }}
+                />
+                <span className="toggle-custom"></span>
+                <span className="toggle-text">In-Stock Only</span>
+              </label>
             </div>
-            <h3>No Spare Parts Found</h3>
-            <p>We could not find any parts matching your selected search and filters.</p>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedVehicleType('ALL');
-                setSelectedCategory('ALL');
-                setSelectedCondition('ALL');
-                setInStockOnly(false);
-              }}
-            >
-              Clear All Filters
-            </button>
-          </div>
-        ) : (
-          <div className="parts-catalog-grid">
-            {parts.map((part) => {
-              const thumbUrl = part.imagePaths && part.imagePaths.length > 0
-                ? part.imagePaths[0]
-                : null;
-              const isOutOfStock = part.stockQuantity <= 0;
-              const shopInfo = part.shopId;
 
-              return (
-                <div key={part._id} className="marketplace-part-card fade-in">
-                  <div className="part-card-thumb">
-                    {thumbUrl ? (
-                      <img src={thumbUrl} alt={part.partName} />
-                    ) : (
-                      <div className="no-part-thumb-placeholder">
-                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                          <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                      </div>
-                    )}
-                    <span className="card-veh-badge">{part.vehicleType}</span>
-                    <span className="card-cond-badge">{part.condition}</span>
-                  </div>
+            {/* Part Category */}
+            <div className="filter-group">
+              <label className="filter-title">Part Category</label>
+              <select
+                className="filter-select-input"
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                {CATEGORIES_LIST.map((c) => (
+                  <option key={c} value={c}>
+                    {c === 'ALL' ? 'All Categories' : c}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                  <div className="part-card-body">
-                    <div className="mfg-sku-row">
-                      <span className="part-mfg-text">{part.manufacturer}</span>
-                      <code className="part-sku-code">{part.partNumber}</code>
-                    </div>
+            {/* Price Range */}
+            <div className="filter-group">
+              <label className="filter-title">Price Range (₹)</label>
+              <div className="price-inputs-pair">
+                <input
+                  type="number"
+                  placeholder="Min ₹"
+                  className="price-filter-input"
+                  min="0"
+                  value={minPrice}
+                  onChange={(e) => {
+                    setMinPrice(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+                <span className="price-separator">-</span>
+                <input
+                  type="number"
+                  placeholder="Max ₹"
+                  className="price-filter-input"
+                  min="0"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    setMaxPrice(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            </div>
 
-                    <h3 className="part-name-title" title={part.partName}>
-                      {part.partName}
-                    </h3>
+            {/* Manufacturer Brand */}
+            {metadata?.manufacturers && metadata.manufacturers.length > 0 && (
+              <div className="filter-group">
+                <label className="filter-title">Brand / Manufacturer</label>
+                <select
+                  className="filter-select-input"
+                  value={manufacturer}
+                  onChange={(e) => {
+                    setManufacturer(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="ALL">All Brands</option>
+                  {metadata.manufacturers.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-                    {/* Compatibility Preview */}
-                    {part.compatibleMakes && part.compatibleMakes.length > 0 && (
-                      <div className="compatibility-chips-preview">
-                        <span className="compat-label">Fits:</span>
-                        {part.compatibleMakes.slice(0, 2).map((make, idx) => (
-                          <span key={idx} className="compat-chip">{make}</span>
-                        ))}
-                        {part.compatibleMakes.length > 2 && (
-                          <span className="compat-more">+{part.compatibleMakes.length - 2} more</span>
-                        )}
-                      </div>
-                    )}
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className="btn btn-outline btn-block btn-reset-sidebar"
+                onClick={handleResetFilters}
+              >
+                Clear All Filters
+              </button>
+            )}
+          </aside>
 
-                    {/* Shop Seller Meta */}
-                    {shopInfo && (
-                      <div className="seller-shop-row">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                        </svg>
-                        <span className="shop-name-text">{shopInfo.name}</span>
-                        <span className="shop-city-text">({shopInfo.address?.city || 'Pune'})</span>
-                      </div>
-                    )}
+          {/* Results Main Column */}
+          <main className="parts-results-column">
+            {/* View Mode: Map View */}
+            {viewMode === 'map' && (
+              <div className="map-view-container fade-in">
+                <SearchResultsMapView
+                  shops={shops}
+                  userLocation={
+                    latitude !== null && longitude !== null
+                      ? { latitude, longitude, name: locationName }
+                      : null
+                  }
+                  radiusKm={radiusKm}
+                  height="500px"
+                />
+              </div>
+            )}
 
-                    <div className="card-price-availability-row">
-                      <span className="card-price-inr">₹{Number(part.price).toLocaleString('en-IN')}</span>
-                      {isOutOfStock ? (
-                        <span className="badge badge-danger">OUT OF STOCK</span>
-                      ) : (
-                        <span className="badge badge-green">IN STOCK ({part.stockQuantity})</span>
-                      )}
-                    </div>
-
-                    <div className="part-card-cta">
-                      <Link to={`/parts/${part._id}`} className="btn btn-primary btn-block">
-                        View Details & Specifications
-                      </Link>
-                    </div>
-                  </div>
+            {/* Loading Indicator */}
+            {loading ? (
+              <div className="parts-loading-card">
+                <div className="auth-spinner">
+                  <svg viewBox="0 0 32 32" fill="none" className="spin-cog">
+                    <circle cx="16" cy="16" r="10" stroke="var(--color-orange-primary)" strokeWidth="3" strokeDasharray="3 1.5"/>
+                    <circle cx="16" cy="16" r="4" fill="var(--color-navy-primary)"/>
+                  </svg>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <h3>Searching Nearby Spare Parts...</h3>
+                <p>Querying verified local shops and authentic inventory.</p>
+              </div>
+            ) : parts.length === 0 ? (
+              /* Empty State */
+              <div className="parts-empty-state-card fade-in">
+                <div className="empty-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  </svg>
+                </div>
+                <h3>No Matching Spare Parts Found</h3>
+                <p>
+                  No available parts in verified shops matched your current filters
+                  {locationName ? ` within ${radiusKm} km of ${locationName}` : ''}.
+                </p>
+                <div className="empty-state-suggestions">
+                  <ul>
+                    <li>Try expanding your search radius (e.g. 50 km or 100 km)</li>
+                    <li>Check your vehicle make and model spelling</li>
+                    <li>Uncheck "In-Stock Only" to view out-of-stock items</li>
+                    <li>Try broader keywords like "Brake", "Filter", or "Oil"</li>
+                  </ul>
+                </div>
+                <button type="button" className="btn btn-primary" onClick={handleResetFilters}>
+                  Clear All Filters & Show Available Spares
+                </button>
+              </div>
+            ) : (
+              /* Products Grid View */
+              <>
+                <div className="parts-grid-display">
+                  {parts.map((part) => (
+                    <SearchResultCard
+                      key={part._id}
+                      part={part}
+                      userLocation={latitude ? { latitude, longitude } : null}
+                    />
+                  ))}
+                </div>
 
-        {/* Pagination Bar */}
-        {pagination.pages > 1 && (
-          <div className="inv-pagination-bar">
-            <span className="pagination-info">
-              Showing page {pagination.page} of {pagination.pages} ({pagination.total} catalog parts)
-            </span>
-            <div className="pagination-btns">
-              <button
-                type="button"
-                className="btn btn-outline"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline"
-                disabled={currentPage >= pagination.pages}
-                onClick={() => setCurrentPage((p) => Math.min(pagination.pages, p + 1))}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+                {/* Pagination Controls */}
+                {pagination.totalPages > 1 && (
+                  <div className="parts-pagination-bar">
+                    <button
+                      type="button"
+                      className="pagination-btn"
+                      disabled={!pagination.hasPrev}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    >
+                      ← Previous
+                    </button>
+
+                    <div className="pagination-pages-info">
+                      Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="pagination-btn"
+                      disabled={!pagination.hasNext}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

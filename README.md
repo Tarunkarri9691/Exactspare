@@ -1,16 +1,16 @@
 # EXACTSPARE — Vehicle Spare Parts Finder
 
-> **Module 4: Shop Management & Spare Parts Inventory System**  
-> Complete enterprise-grade multi-tenant merchant inventory management, catalog publishing, vehicle compatibility specification, and public spare parts discovery engine. Built on Express.js, MongoDB/Mongoose, and React 18 + Vite with strict cross-tenant isolation, automated stock status transitions, and robust automated test suites.
+> **Module 5: Location-Based Spare-Part Search & Geospatial Discovery Engine**  
+> Complete enterprise-grade location-based vehicle spare parts discovery platform. Features geospatial radius search on MongoDB `2dsphere` indexes, great-circle distance calculation via the Haversine formula, interactive Leaflet/OpenStreetMap markers with custom automotive SVG pins, browser Geolocation API with graceful denial fallbacks, OpenStreetMap Nominatim city/pincode geocoding with in-memory caching, reusable VehicleSelector with verified compatibility badges, multi-criteria filtering, price and distance sorting, and turn-by-turn external directions integration.
 
 ---
 
 ## 1. System Architecture & Role Ecosystem
 
 EXACTSPARE connects three distinct platform roles with strict backend authorization:
-- **Customer (`CUSTOMER`)**: Register, browse approved retail shops, search spare parts by vehicle compatibility (Make, Model, Year, Category), view stock levels and pricing, and locate nearby vendors.
-- **Shop Owner (`OWNER`)**: Apply for retail shop verification, manage approved store profile, publish spare parts with images and vehicle compatibility specifications, track stock quantities, and adjust pricing.
-- **Admin (`ADMIN`)**: Server-initialized governance role with access to compliance applications, store lifecycle controls, platform statistics, and audit oversight.
+- **Customer (`CUSTOMER`)**: Register, browse approved retail shops, search spare parts by vehicle compatibility (Make, Model, Year, Category), locate nearby vendors via browser GPS or city/pincode, view real stock levels and pricing in Indian Rupees (`₹`), view shop locations on an interactive Leaflet map, and launch external driving directions.
+- **Shop Owner (`OWNER`)**: Apply for retail shop verification, submit storefront photos and trade documents, manage approved store profile, publish spare parts with images and vehicle compatibility specifications, track stock quantities, and adjust pricing.
+- **Admin (`ADMIN`)**: Server-initialized governance role with access to compliance applications, store lifecycle controls (suspend/reactivate), platform statistics, and audit oversight.
 
 ---
 
@@ -19,20 +19,25 @@ EXACTSPARE connects three distinct platform roles with strict backend authorizat
 ### Frontend
 - **Framework & Bundler**: React 18, Vite 6
 - **Routing & Navigation**: React Router 7 with role-guarded routes (`/owner/inventory`, `/owner/inventory/new`, `/owner/inventory/:id/edit`, `/owner/shop`, `/shops`, `/parts`).
-- **Interactive Maps**: Leaflet & OpenStreetMap (`leaflet` library) with custom SVG map pins and coordinate geocoding.
+- **Interactive Maps**: Leaflet & OpenStreetMap (`leaflet` library) with custom SVG map pins, click-to-pin coordinate detection, radius circles, and shop popup dossiers.
+- **Geocoding**: OpenStreetMap Nominatim forward geocoding via secure backend proxy (`/api/search/geocode`).
 - **State & Session Management**: `AuthContext` restoring session from signed HttpOnly cookie on page refresh.
 - **HTTP Client**: Axios with `withCredentials: true` and multipart `FormData` support for image uploads.
 - **Styling**: Vanilla CSS design tokens (Navy `#0B192C`, White `#FFFFFF`, Automotive Orange `#FF6500`, Status Green `#00C851`, and Status Red `#FF4444`).
 
 ### Backend
 - **Runtime & Framework**: Node.js, Express.js (ES Modules `"type": "module"`)
-- **Database**: MongoDB with Mongoose ODM (indexes on `2dsphere` coordinates, `partNumber`, `shopId`, `ownerId`)
+- **Database**: MongoDB with Mongoose ODM
+- **Geospatial & Search Engine**:
+  - `2dsphere` index on `Shop.address.location` (`[longitude, latitude]`)
+  - Compound text and filter indexes on `SparePart`
+  - High-precision Haversine straight-line distance algorithm in `utils/distance.js`
+  - Safe regex query escaping preventing ReDoS and injection
 - **File Upload & Storage Architecture**:
   - `Multer` with disk storage and non-guessable random suffixes
   - **Public Storefront Photos**: Saved to `backend/uploads/shops/`, exposed statically at `/uploads/shops/`
   - **Public Spare Part Images**: Saved to `backend/uploads/parts/`, exposed statically at `/uploads/parts/`
   - **Private Verification Documents**: Saved to `backend/uploads/documents/`, **never** exposed statically. Accessible strictly through authenticated endpoint `GET /api/shop-applications/:id/documents/:filename`.
-  - File restrictions: Strict MIME type validation (JPEG, PNG, WebP), 5MB file size limit.
 - **Security & Authorization**:
   - `bcryptjs` password hashing (cost factor 10)
   - `jsonwebtoken` signed JWTs via HttpOnly cookies
@@ -41,9 +46,9 @@ EXACTSPARE connects three distinct platform roles with strict backend authorizat
 
 ---
 
-## 3. Database Models
+## 3. Database Models & Indexing
 
-### 1. `SparePart` (`models/SparePart.js`) — *Module 4*
+### 1. `SparePart` (`models/SparePart.js`)
 - `shopId`: ObjectId ref to Shop (indexed)
 - `ownerId`: ObjectId ref to User (indexed)
 - `partName`: String (required, indexed)
@@ -51,19 +56,24 @@ EXACTSPARE connects three distinct platform roles with strict backend authorizat
 - `description`: String
 - `category`: Enum `['Engine', 'Brakes', 'Transmission', 'Electrical', 'Suspension', 'Body', 'Exhaust', 'Cooling', 'Tires & Wheels', 'Accessories', 'Other']`
 - `vehicleType`: Enum `['Bike', 'Car', 'Scooter', 'Bicycle', 'Other']`
-- `compatibility`: Array of `{ make, model, yearFrom, yearTo, engine }`
-- `manufacturer`: String (e.g. Brembo, Bosch, Exedy)
+- `compatibleMakes`: Array of Strings (e.g. `['Hyundai', 'Maruti']`)
+- `compatibleModels`: Array of Strings (e.g. `['i20', 'Swift']`)
+- `compatibleYears`: Array of Strings (e.g. `['2018', '2019', '2020']`)
+- `engineDetails`: String
+- `manufacturer`: String (e.g. Brembo, Bosch, Castrol)
 - `price`: Number (min: 0, required)
 - `stockQuantity`: Number (min: 0, required, auto-transitions status to `OUT_OF_STOCK` at 0)
 - `stockStatus`: Enum `['IN_STOCK', 'OUT_OF_STOCK', 'DISCONTINUED']`
 - `images`: Array of relative file paths (e.g. `['/uploads/parts/...']`)
 - `condition`: Enum `['NEW', 'REFURBISHED', 'USED']` (default: `NEW`)
-- `warrantyMonths`: Number (default: 0)
 - `isPublished`: Boolean (default: true)
 - `isArchived`: Boolean (default: false, enables safe soft deletion)
-- `timestamps`: `createdAt`, `updatedAt`
+- **Indexes**:
+  - Compound: `{ vehicleType: 1, category: 1, availabilityStatus: 1, isPublished: 1, isArchived: 1 }`
+  - Compound: `{ shopId: 1, isArchived: 1, isPublished: 1 }`
+  - Text Index: `{ partName: 'text', partNumber: 'text', manufacturer: 'text', description: 'text' }`
 
-### 2. `Shop` (`models/Shop.js`) — *Modules 3 & 4*
+### 2. `Shop` (`models/Shop.js`)
 - `ownerId`: ObjectId ref to User (unique, 1 active shop per owner)
 - `applicationId`: ObjectId ref to ShopApplication (unique)
 - `name`, `slug`, `category`, `description`
@@ -73,61 +83,50 @@ EXACTSPARE connects three distinct platform roles with strict backend authorizat
 - `images`: Array of public image paths
 - `isApproved`: Boolean (default `false`)
 - `isActive`: Boolean (default `true`)
-
-### 3. `ShopApplication` (`models/ShopApplication.js`) — *Module 3*
-- Merchant onboarding application with storefront photos, private legal verification documents, status machine (`DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `NEEDS_CORRECTION`), and full audit history.
-
-### 4. `Notification` (`models/Notification.js`)
-- In-app notification dispatcher for merchant status changes, review feedback, and platform alerts.
+- **Geospatial Index**:
+  - `shopSchema.index({ 'address.location': '2dsphere' })`
+  - Compound: `shopSchema.index({ isApproved: 1, isActive: 1 })`
 
 ---
 
 ## 4. API Endpoints Catalog
 
+### Location-Based Discovery & Search (`/api/search`) — *Module 5*
+| Method | Endpoint | Query Parameters | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/search/nearby-parts` | `q`, `partNumber`, `vehicleType`, `make`, `model`, `year`, `category`, `latitude`, `longitude`, `radiusKm`, `minPrice`, `maxPrice`, `inStock`, `sortBy`, `page`, `limit` | Location-based discovery engine with geospatial radius, straight-line distance calculation, multi-criteria filtering, and shop marker compilation |
+| `GET` | `/api/search/meta` | None | Real-time database metadata: active part categories with counts, vehicle types with counts, and distinct makes/models |
+| `GET` | `/api/search/recent-parts` | `limit` (default: 8) | Fetches real recently added available parts from active, approved shops |
+| `GET` | `/api/search/geocode` | `q` (city, area or pincode) | Forward geocoding proxy via OpenStreetMap Nominatim with in-memory caching |
+
 ### Spare Parts Inventory (`/api/parts`) — *Module 4*
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/parts` | Public | Search and filter public spare parts with multi-criteria queries |
+| `GET` | `/api/parts` | Public | Search and filter public spare parts catalog |
 | `GET` | `/api/parts/:id` | Public | Retrieve public details for a specific spare part |
 | `GET` | `/api/parts/my` | `OWNER` | Fetch authenticated owner's full inventory with aggregated inventory metrics |
 | `POST` | `/api/parts` | `OWNER` | Create new spare part listing with multipart product photos |
 | `PATCH` | `/api/parts/:id` | `OWNER` | Update part details, pricing, stock levels, and compatibility |
 | `DELETE` | `/api/parts/:id` | `OWNER` | Safe soft-archive spare part preserving historical references |
-| `POST` | `/api/parts/:id/images` | `OWNER` | Upload additional photos to an existing spare part listing |
-| `DELETE` | `/api/parts/:id/images/:imageFilename` | `OWNER` | Remove a specific image from a spare part |
 
 ### Shop Management (`/api/shops`) — *Modules 3 & 4*
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/shops` | Public | List verified & active retail shops (`isApproved: true, isActive: true`) |
-| `GET` | `/api/shops/:id` | Public | View public details of an approved shop including its catalog |
+| `GET` | `/api/shops` | Public | List verified & active retail shops |
+| `GET` | `/api/shops/:id` | Public | View public details of an approved shop with map coordinates |
 | `GET` | `/api/shops/my` | `OWNER` | Retrieve authenticated owner's approved shop profile |
 | `PATCH` | `/api/shops/my` | `OWNER` | Update store description, opening hours, contact details |
-| `POST` | `/api/shops/my/images` | `OWNER` | Upload storefront and showroom gallery images |
-| `PATCH` | `/api/shops/:id/status` | `ADMIN` | Suspend or reactivate a shop |
-
-### Shop Application Endpoints (`/api/shop-applications`) — *Module 3*
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/shop-applications` | `OWNER` | Create or update draft application with multipart uploads |
-| `GET` | `/api/shop-applications/my` | `OWNER` | Retrieve authenticated owner's active application status |
-| `GET` | `/api/shop-applications/:id` | `OWNER` / `ADMIN` | Retrieve specific application details and review history |
-| `POST` | `/api/shop-applications/:id/submit` | `OWNER` | Validate all mandatory fields and transition status to `PENDING` |
-| `GET` | `/api/shop-applications/:id/documents/:filename` | `OWNER` / `ADMIN` | Secure streaming of private verification documents |
-
-### Admin Applications Management (`/api/admin`) — *Module 3*
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/admin/shop-applications` | `ADMIN` | Paginated listing of all applications with status filters |
-| `GET` | `/api/admin/shop-applications/:id` | `ADMIN` | Complete application dossier with storefront photos and docs |
-| `PATCH` | `/api/admin/shop-applications/:id/decision` | `ADMIN` | Process decision: `APPROVE`, `REJECT`, or `REQUEST_CORRECTIONS` |
 
 ---
 
 ## 5. Development & Execution (Windows PowerShell)
 
-### Run All Test Suites (47 Automated Verification Scenarios)
+### Run All 4 Automated Test Suites (64 Total Scenarios)
 ```powershell
+# Module 5: Location-Based Search Test Suite (17 Scenarios)
+cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
+npm run test:m5
+
 # Module 4: Shop Management & Inventory Test Suite (16 Scenarios)
 cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
 npm run test:m4
@@ -176,7 +175,28 @@ npm run build
 
 ## 6. Verification Results
 
-### Module 4: Shop & Inventory Test Suite (16/16 Passed)
+### Module 5: Location-Based Search Test Suite (17/17 Passed — 100%)
+```text
+✔ [PASS 1] Search by part name successfully returned matching product
+✔ [PASS 2] Search by exact part number returned targeted product
+✔ [PASS 3] Filtered by vehicle type "Bike" successfully (3 parts found)
+✔ [PASS 4] Filtered by compatible make ("Hyundai") and model ("Swift") accurately
+✔ [PASS 5] Filtered by category and price range (₹600 - ₹700) matching Castrol Oil
+✔ [PASS 6] Geospatial query returned 3 nearby parts in Pune (Mumbai shop excluded by 25km radius)
+✔ [PASS 7] Invalid coordinates and missing longitude rejected safely with HTTP 400
+✔ [PASS 8] Metadata endpoint returns real database categories and compatible makes
+✔ [PASS 9] Products from suspended shops are strictly excluded from search results
+✔ [PASS 10] Draft and unpublished listings (isPublished: false) are strictly excluded
+✔ [PASS 11] inStock=true successfully filtered out zero-stock Spark Plug while retaining in-stock Wiper Blades
+✔ [PASS 12] Sorted results by price ascending (price_asc) and distance (distance) correctly
+✔ [PASS 13] General search without location handled gracefully (distanceKm: null, hasLocation: false)
+✔ [PASS 14] Pagination functions without duplication
+✔ [PASS 15] Handled empty matches cleanly (total: 0) and rejected inverted prices / excessive radius (HTTP 400)
+✔ [PASS 16] Shop details verified with valid GeoJSON coordinates and directions link: https://www.google.com/maps/dir/?api=1&destination=18.5204,73.8567
+✔ [PASS 17] Confirmed authentic mathematical distance (120.2 km, expected ~120.2 km) and real database stock values
+```
+
+### Module 4: Shop & Inventory Test Suite (16/16 Passed — 100%)
 ```text
 ✔ [PASS 1] Approved owner can view and update their own shop profile
 ✔ [PASS 2] Unapproved owner is blocked from publishing inventory (HTTP 403)
@@ -196,7 +216,7 @@ npm run build
 ✔ [PASS 16] Owner inventory overview returns accurate aggregated inventory metrics and pagination
 ```
 
-### Module 3: Shop Application & Admin Approval Test Suite (16/16 Passed)
+### Module 3: Shop Application & Admin Approval Test Suite (16/16 Passed — 100%)
 ```text
 ✔ [PASS 1] Owner can create an application draft successfully
 ✔ [PASS 2] Missing required fields (e.g. storefront photos) rejected with HTTP 400
@@ -216,7 +236,7 @@ npm run build
 ✔ [PASS 16] In-app notifications and database audit histories recorded safely for all lifecycle events
 ```
 
-### Module 2: Authentication & RBAC Test Suite (15/15 Passed)
+### Module 2: Authentication & RBAC Test Suite (15/15 Passed — 100%)
 ```text
 ✔ [PASS 1] Customer registration succeeds and returns safe user object
 ✔ [PASS 2] Owner registration succeeds with OWNER role

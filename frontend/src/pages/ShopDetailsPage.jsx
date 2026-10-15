@@ -129,6 +129,30 @@ const ShopDetailsPage = () => {
                 <span className="meta-val">{shop.openingHours || 'Mon-Sat 9AM-8PM'}</span>
               </div>
             </div>
+
+            {/* Directions Action Row */}
+            <div className="hero-directions-action">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${shopLat},${shopLng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary btn-directions-hero"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+                <span>Get Driving Directions (Google Maps)</span>
+              </a>
+
+              <a
+                href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=%3B${shopLat}%2C${shopLng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline btn-directions-osm"
+              >
+                <span>OpenStreetMap Directions</span>
+              </a>
+            </div>
           </div>
 
           {/* Storefront Photo Preview */}
@@ -150,10 +174,23 @@ const ShopDetailsPage = () => {
 
         {/* Map Location Section */}
         <div className="shop-location-section">
-          <h3 className="section-title">Physical Store Location</h3>
-          <p className="section-subtitle">
-            Visit this verified retailer directly or use the coordinates below for navigation.
-          </p>
+          <div className="location-section-header">
+            <div>
+              <h3 className="section-title">Physical Store Location</h3>
+              <p className="section-subtitle">
+                Verified store coordinates: <code>{shopLat.toFixed(4)}, {shopLng.toFixed(4)}</code>. Use the external link for live turn-by-turn routing.
+              </p>
+            </div>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${shopLat},${shopLng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary btn-sm"
+            >
+              Directions Link ↗
+            </a>
+          </div>
+
           <div className="shop-map-card">
             <LocationPickerMap
               latitude={shopLat}

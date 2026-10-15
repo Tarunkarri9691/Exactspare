@@ -51,7 +51,7 @@ const Navbar = () => {
 
         {/* Module Badge */}
         <div className="module-badge-nav">
-          <span className="badge badge-orange">Module 4 • Inventory & Shops</span>
+          <span className="badge badge-orange">Module 5 • Location Search</span>
         </div>
 
         {/* Desktop Navigation */}

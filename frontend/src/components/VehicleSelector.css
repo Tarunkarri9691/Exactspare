@@ -1,0 +1,154 @@
+.vehicle-selector-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-4);
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.selector-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-navy-primary);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-clear-selector {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn-clear-selector:hover {
+  opacity: 0.8;
+}
+
+.vehicle-types-pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.vehicle-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.vehicle-pill:hover {
+  border-color: var(--color-orange-primary);
+  color: var(--color-navy-primary);
+  background: #FFF7ED;
+}
+
+.vehicle-pill.active {
+  background: var(--color-navy-primary);
+  border-color: var(--color-navy-primary);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(11, 25, 44, 0.2);
+}
+
+.compatibility-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.input-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.label-note {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.field-input-wrap {
+  position: relative;
+}
+
+.field-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--color-orange-primary);
+  background: #FFFFFF;
+}
+
+.field-input.disabled-field {
+  background: #E5E7EB;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.compatibility-summary-bar {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.compatibility-note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .vehicle-types-pills {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .compatibility-inputs-grid {
+    grid-template-columns: 1fr;
+  }
+}

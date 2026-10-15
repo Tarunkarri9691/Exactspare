@@ -1,94 +1,64 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
-import CategoryCard from '../components/CategoryCard';
+import SearchResultCard from '../components/SearchResultCard';
 import SystemHealthWidget from '../components/SystemHealthWidget';
+import { fetchSearchMetadata, fetchRecentAvailableParts, fetchPublicShops } from '../services/api';
 import './HomePage.css';
 
-const CATEGORIES = [
-  {
-    id: 'bike',
-    title: 'Bike',
-    subtitle: 'Motorcycles, sports bikes, cruisers, and commuter two-wheelers.',
-    commonParts: ['Brake Pads', 'Clutch Plates', 'Chain Sprocket', 'Air Filter', 'Engine Oil'],
-    icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="5" cy="17" r="3"/>
-        <circle cx="19" cy="17" r="3"/>
-        <path d="M12 17h4l3-9H9"/>
-        <path d="M9 8l2-4h3"/>
-        <circle cx="9" cy="8" r="1.5" fill="currentColor"/>
-      </svg>
-    )
-  },
-  {
-    id: 'car',
-    title: 'Car',
-    subtitle: 'Hatchbacks, sedans, compact SUVs, and luxury passenger cars.',
-    commonParts: ['Oil Filters', 'Brake Rotors', 'Spark Plugs', 'Suspension Bush', 'Headlights'],
-    icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9C2.1 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2"/>
-        <circle cx="7" cy="17" r="2"/>
-        <path d="M9 17h6"/>
-        <circle cx="17" cy="17" r="2"/>
-      </svg>
-    )
-  },
-  {
-    id: 'scooter',
-    title: 'Scooter',
-    subtitle: 'Automatic scooters, mopeds, gearless vehicles, and e-scooters.',
-    commonParts: ['Drive Belts', 'Roller Weights', 'Battery', 'Brake Cables', 'Carburetor / Injector'],
-    icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="5.5" cy="17.5" r="2.5"/>
-        <circle cx="18.5" cy="17.5" r="2.5"/>
-        <path d="M8 17.5h7"/>
-        <path d="M15 17.5V11l-3-4H9"/>
-        <path d="M12 7l1-3h3"/>
-      </svg>
-    )
-  },
-  {
-    id: 'bicycle',
-    title: 'Bicycle',
-    subtitle: 'Geared cycles, road bikes, mountain bikes (MTB), and hybrid commuters.',
-    commonParts: ['Derailleur Cables', 'Brake Shoes', 'Tubes & Tires', 'Pedals', 'Chains'],
-    icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="5.5" cy="17.5" r="3.5"/>
-        <circle cx="18.5" cy="17.5" r="3.5"/>
-        <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5L9 9l3-3 3 5 4.5 3"/>
-        <path d="M5.5 17.5L9 9"/>
-      </svg>
-    )
-  },
-  {
-    id: 'other',
-    title: 'Other',
-    subtitle: 'Commercial vehicles, auto-rickshaws, pickups, light trucks, and machinery.',
-    commonParts: ['Leaf Springs', 'Heavy Batteries', 'Fuel Injectors', 'Clutch Boosters', 'Radiators'],
-    icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="3" width="15" height="13"/>
-        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-        <circle cx="5.5" cy="18.5" r="2.5"/>
-        <circle cx="18.5" cy="18.5" r="2.5"/>
-      </svg>
-    )
-  }
+const STATIC_VEHICLE_CATEGORIES = [
+  { id: 'Bike', title: 'Bike', subtitle: 'Motorcycles & commuter 2-wheelers.', icon: '🏍️' },
+  { id: 'Car', title: 'Car', subtitle: 'Hatchbacks, sedans, compact SUVs.', icon: '🚗' },
+  { id: 'Scooter', title: 'Scooter', subtitle: 'Gearless mopeds & e-scooters.', icon: '🛵' },
+  { id: 'Bicycle', title: 'Bicycle', subtitle: 'Geared, road & MTB bicycles.', icon: '🚲' },
+  { id: 'Other', title: 'Other', subtitle: 'Commercial, 3-wheelers & pickups.', icon: '🚚' }
 ];
 
 const HomePage = () => {
+  const [metadata, setMetadata] = useState(null);
+  const [recentParts, setRecentParts] = useState([]);
+  const [featuredShops, setFeaturedShops] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [selectedCategoryInfo, setSelectedCategoryInfo] = useState(null);
+  const navigate = useNavigate();
 
-  const handleSelectCategory = (categoryTitle) => {
-    setSelectedCategoryInfo(categoryTitle);
+  useEffect(() => {
+    const loadHomeData = async () => {
+      setLoadingData(true);
+      try {
+        const [metaRes, recentRes, shopsRes] = await Promise.all([
+          fetchSearchMetadata(),
+          fetchRecentAvailableParts(8),
+          fetchPublicShops({ limit: 4 })
+        ]);
+
+        if (metaRes.success && metaRes.data) {
+          setMetadata(metaRes.data);
+        }
+
+        if (recentRes.success && recentRes.data) {
+          setRecentParts(recentRes.data);
+        }
+
+        if (shopsRes.success && shopsRes.data?.shops) {
+          setFeaturedShops(shopsRes.data.shops);
+        }
+      } catch (err) {
+        console.error('Error loading home data:', err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadHomeData();
+  }, []);
+
+  const handleSelectVehicle = (vType) => {
+    navigate(`/parts?vehicleType=${vType}`);
   };
 
-  const closeCategoryModal = () => {
-    setSelectedCategoryInfo(null);
+  const handleSelectCategory = (catName) => {
+    navigate(`/parts?category=${encodeURIComponent(catName)}`);
   };
 
   return (
@@ -105,51 +75,187 @@ const HomePage = () => {
             </div>
             
             <h1 className="hero-title">
-              Find the Right Vehicle Spare Parts in Nearby Shops
+              Find Genuine Vehicle Spare Parts in Nearby Approved Shops
             </h1>
 
             <p className="hero-description">
-              Find the right vehicle spare parts in nearby shops.
-            </p>
-
-            <p className="hero-subtext">
               Directly match spare parts with verified local merchants across Bike, Car, Scooter, Bicycle, and Commercial categories.
             </p>
           </div>
 
-          {/* Interactive Search Bar UI */}
+          {/* Prominent Search Bar with Vehicle & Location Selectors */}
           <div className="hero-search-wrapper">
-            <SearchBar onCategorySelect={(cat) => console.log('Selected category filter:', cat)} />
+            <SearchBar />
           </div>
         </div>
       </section>
 
-      {/* Vehicle Categories Section */}
+      {/* Vehicle Spectrum Selector */}
       <section className="categories-section">
         <div className="container">
           <div className="section-header">
             <div className="section-header-text">
-              <span className="badge badge-orange">Vehicle Spectrum</span>
-              <h2 className="section-title">Supported Vehicle Categories</h2>
+              <span className="badge badge-orange">Vehicle Types</span>
+              <h2 className="section-title">Select Your Vehicle Category</h2>
               <p className="section-subtitle">
-                Browse parts tailored specifically for your vehicle type across authentic local auto vendors.
+                Filter compatible components specifically built for your vehicle class.
               </p>
             </div>
           </div>
 
-          <div className="categories-grid">
-            {CATEGORIES.map((category) => (
-              <CategoryCard 
-                key={category.id}
-                id={category.id}
-                title={category.title}
-                subtitle={category.subtitle}
-                icon={category.icon}
-                commonParts={category.commonParts}
-                onSelectCategory={handleSelectCategory}
-              />
-            ))}
+          <div className="home-vehicle-grid">
+            {STATIC_VEHICLE_CATEGORIES.map((veh) => {
+              const matchedCount = metadata?.vehicleTypes?.find((v) => v.name === veh.id)?.count || 0;
+              return (
+                <div
+                  key={veh.id}
+                  className="home-vehicle-card"
+                  onClick={() => handleSelectVehicle(veh.id)}
+                >
+                  <span className="veh-icon">{veh.icon}</span>
+                  <div className="veh-info">
+                    <h4>{veh.title}</h4>
+                    <p>{veh.subtitle}</p>
+                    <span className="veh-count-badge">
+                      {matchedCount > 0 ? `${matchedCount} Parts Available` : 'Explore Catalog'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
+      </section>
+
+      {/* Popular Categories Section (Real Database Data) */}
+      <section className="popular-categories-section">
+        <div className="container">
+          <div className="section-header">
+            <div className="section-header-text">
+              <span className="badge badge-navy">Platform Catalog</span>
+              <h2 className="section-title">Popular Part Categories</h2>
+              <p className="section-subtitle">
+                Based on active stock across verified local auto spare retailers.
+              </p>
+            </div>
+            <Link to="/parts" className="btn btn-outline">
+              View All Parts →
+            </Link>
+          </div>
+
+          {metadata?.categories && metadata.categories.length > 0 ? (
+            <div className="popular-categories-grid">
+              {metadata.categories.slice(0, 8).map((cat) => (
+                <button
+                  key={cat.name}
+                  type="button"
+                  className="popular-cat-chip"
+                  onClick={() => handleSelectCategory(cat.name)}
+                >
+                  <span className="chip-name">{cat.name}</span>
+                  <span className="chip-count">{cat.count}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-catalog-notice">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <p>No inventory categories published yet. Approved shop owners will populate the live catalog.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Recently Added Available Parts (Real Database Data) */}
+      <section className="recent-parts-section">
+        <div className="container">
+          <div className="section-header">
+            <div className="section-header-text">
+              <span className="badge badge-green">Fresh Arrivals</span>
+              <h2 className="section-title">Recently Added Available Parts</h2>
+              <p className="section-subtitle">
+                Live available inventory directly from approved auto spare merchants.
+              </p>
+            </div>
+            <Link to="/parts?sortBy=newest" className="btn btn-outline">
+              Explore All Parts →
+            </Link>
+          </div>
+
+          {recentParts.length > 0 ? (
+            <div className="recent-parts-grid">
+              {recentParts.map((part) => (
+                <SearchResultCard key={part._id} part={part} />
+              ))}
+            </div>
+          ) : (
+            <div className="empty-catalog-notice">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <h4>No Published Products Yet</h4>
+              <p>Once approved shop owners publish spare parts with images, pricing, and compatibility, they will appear here in real time.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Nearby Verified Retail Shops */}
+      <section className="featured-shops-section">
+        <div className="container">
+          <div className="section-header">
+            <div className="section-header-text">
+              <span className="badge badge-orange">Verified Retailers</span>
+              <h2 className="section-title">Verified Nearby Auto Spare Shops</h2>
+              <p className="section-subtitle">
+                Authorized spare-part vendors with verified legal licenses and physical shopfronts.
+              </p>
+            </div>
+            <Link to="/shops" className="btn btn-outline">
+              Browse All Stores →
+            </Link>
+          </div>
+
+          {featuredShops.length > 0 ? (
+            <div className="home-shops-grid">
+              {featuredShops.map((shop) => (
+                <div key={shop._id} className="home-shop-card fade-in">
+                  <div className="shop-card-banner">
+                    {shop.images && shop.images.length > 0 ? (
+                      <img src={shop.images[0]} alt={shop.name} />
+                    ) : (
+                      <div className="shop-no-photo">Storefront Photo Pending</div>
+                    )}
+                    <span className="shop-cat-pill">{shop.category}</span>
+                  </div>
+                  <div className="shop-card-body">
+                    <h4 className="shop-name-title">{shop.name}</h4>
+                    <p className="shop-location-sub">
+                      📍 {shop.address?.city}, {shop.address?.state}
+                    </p>
+                    <p className="shop-hours-sub">
+                      🕒 {shop.openingHours || 'Mon-Sat 9AM-8PM'}
+                    </p>
+                    <div className="shop-card-actions">
+                      <Link to={`/shops/${shop._id}`} className="btn btn-outline btn-sm">
+                        View Store Catalog
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-catalog-notice">
+              <p>No verified retail shops online yet. Shop owners can apply via the merchant portal.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -175,15 +281,15 @@ const HomePage = () => {
               </div>
               <h3 className="role-title">1. Customer</h3>
               <p className="role-description">
-                Search part numbers or names, view exact stock in nearby shops, compare rates, and reserve for pickup.
+                Search part numbers or names, view exact stock in nearby shops, compare rates, and get turn-by-turn directions.
               </p>
               <ul className="role-feature-list">
                 <li>Instant nearby radius discovery</li>
                 <li>Verify compatibility before visiting</li>
                 <li>Zero commission direct purchases</li>
               </ul>
-              <Link to="/register" className="btn btn-outline role-card-btn">
-                Customer Preview
+              <Link to="/parts" className="btn btn-outline role-card-btn">
+                Search Spare Parts
               </Link>
             </div>
 
@@ -198,15 +304,15 @@ const HomePage = () => {
               </div>
               <h3 className="role-title">2. Shop Owner</h3>
               <p className="role-description">
-                Apply to register your retail shop, upload parts inventory, manage price lists, and receive buyer inquiries.
+                Apply for store verification, upload storefront photos, manage live catalog inventory, and connect with customers.
               </p>
               <ul className="role-feature-list">
-                <li>Local store profile & location pin</li>
-                <li>Bulk spare parts inventory upload</li>
-                <li>Direct customer order inquiries</li>
+                <li>Upload trade license & storefront</li>
+                <li>Track stock levels & OEM numbers</li>
+                <li>Automatic geolocation store pin</li>
               </ul>
-              <Link to="/shop-owner" className="btn btn-primary role-card-btn">
-                Shop Registration Preview
+              <Link to="/register-owner" className="btn btn-primary role-card-btn">
+                Register as Merchant
               </Link>
             </div>
 
@@ -228,7 +334,7 @@ const HomePage = () => {
                 <li>Dispute & security oversight</li>
               </ul>
               <div className="admin-status-note">
-                <span className="badge badge-info">Admin Console • Module 5</span>
+                <span className="badge badge-info">Admin Console Active</span>
               </div>
             </div>
           </div>
@@ -241,34 +347,6 @@ const HomePage = () => {
           <SystemHealthWidget />
         </div>
       </section>
-
-      {/* Category Info Modal */}
-      {selectedCategoryInfo && (
-        <div className="modal-backdrop" onClick={closeCategoryModal}>
-          <div className="modal-card fade-in" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{selectedCategoryInfo} Spare Parts Catalog</h3>
-              <button className="modal-close-btn" onClick={closeCategoryModal}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="modal-info-badge">
-                <span className="badge badge-orange">Module 1 Notice</span>
-              </div>
-              <p>
-                You selected the <strong>{selectedCategoryInfo}</strong> category. In this Module 1 foundation release, the database schemas and backend endpoints are being initialized.
-              </p>
-              <p>
-                Live filtered inventory lookup and shop-by-shop stock matching for {selectedCategoryInfo} will be connected in <strong>Module 3 (Spare Parts Catalog & Inventory API)</strong>.
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={closeCategoryModal}>
-                Understood
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

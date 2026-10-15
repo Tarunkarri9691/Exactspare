@@ -256,6 +256,21 @@ const PartDetailsPage = () => {
                   <Link to={`/shops/${shop._id}`} className="btn btn-outline btn-block">
                     Explore All Parts from {shop.name} →
                   </Link>
+
+                  {shop.address?.location?.coordinates && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${shop.address.location.coordinates[1]},${shop.address.location.coordinates[0]}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-block"
+                      style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none' }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                      </svg>
+                      <span>Get Directions to Store ↗</span>
+                    </a>
+                  )}
                 </div>
               </div>
             )}
