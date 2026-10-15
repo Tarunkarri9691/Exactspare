@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import './SearchResultCard.css';
 
 const SearchResultCard = ({ part, userLocation }) => {
@@ -9,9 +10,26 @@ const SearchResultCard = ({ part, userLocation }) => {
 
   const { addItem } = useCart();
   const { user } = useAuth();
+  const { isItemInWishlist, toggleWishlist } = useWishlist();
   const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
+
+  const inWishlist = isItemInWishlist(part._id);
+
+  const handleToggleWishlist = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      navigate(`/login?redirect=/parts/${part._id}`);
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      alert('Only customer accounts can maintain a wishlist.');
+      return;
+    }
+    await toggleWishlist(part._id);
+  };
 
   const handleQuickAdd = async (e) => {
     e.preventDefault();
@@ -81,6 +99,20 @@ const SearchResultCard = ({ part, userLocation }) => {
             </span>
           )}
         </div>
+
+        {(!user || user.role === 'CUSTOMER') && (
+          <button
+            type="button"
+            className={`card-wishlist-toggle ${inWishlist ? 'active' : ''}`}
+            onClick={handleToggleWishlist}
+            title={inWishlist ? 'Remove from Wishlist' : 'Save to Wishlist'}
+            aria-label="Save to Wishlist"
+          >
+            <svg viewBox="0 0 24 24" fill={inWishlist ? '#ff6b00' : 'rgba(0,0,0,0.3)'} stroke={inWishlist ? '#ff6b00' : '#ffffff'} strokeWidth="2">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Main Card Content */}

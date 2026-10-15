@@ -4,6 +4,7 @@ import Order from '../models/Order.js';
 import Cart from '../models/Cart.js';
 import SparePart from '../models/SparePart.js';
 import Shop from '../models/Shop.js';
+import Notification from '../models/Notification.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -259,6 +260,32 @@ export const createOrder = async (req, res) => {
     cart.items = [];
     await cart.save();
 
+    // 10. Dispatch in-app notifications
+    try {
+      // Notify Customer
+      await Notification.create({
+        recipientId: customerId,
+        type: 'ORDER_PLACED',
+        title: 'Order Placed Successfully',
+        message: `Your spare parts order #${order.orderNumber} for ₹${totalAmount.toLocaleString('en-IN')} has been placed successfully via Cash on Delivery.`,
+        relatedOrderId: order._id
+      });
+
+      // Notify each involved shop owner
+      for (const s of order.shops) {
+        await Notification.create({
+          recipientId: s.ownerId,
+          type: 'NEW_ORDER_RECEIVED',
+          title: 'New Order Received',
+          message: `New customer order #${order.orderNumber} contains items from ${s.shopName} (Subtotal: ₹${s.itemsSubtotal.toLocaleString('en-IN')}).`,
+          relatedOrderId: order._id,
+          relatedShopId: s.shopId
+        });
+      }
+    } catch (notifErr) {
+      logger.warn('Failed to dispatch order placement notification:', notifErr.message);
+    }
+
     logger.info(`New order created: ${order.orderNumber} for customer ${customerId} (Total: ₹${totalAmount})`);
 
     return res.status(201).json({
@@ -454,6 +481,30 @@ export const cancelOrder = async (req, res) => {
     }
 
     await order.save();
+
+    // Dispatch cancellation notifications
+    try {
+      await Notification.create({
+        recipientId: order.customerId,
+        type: 'ORDER_CANCELLED',
+        title: 'Order Cancelled',
+        message: `Your order #${order.orderNumber} has been cancelled successfully and reserved inventory was restored.`,
+        relatedOrderId: order._id
+      });
+
+      for (const s of order.shops) {
+        await Notification.create({
+          recipientId: s.ownerId,
+          type: 'ORDER_CANCELLED',
+          title: 'Order Cancelled by Customer',
+          message: `Customer cancelled order #${order.orderNumber} containing parts from ${s.shopName}.`,
+          relatedOrderId: order._id,
+          relatedShopId: s.shopId
+        });
+      }
+    } catch (notifErr) {
+      logger.warn('Failed to dispatch cancellation notifications:', notifErr.message);
+    }
 
     logger.info(`Order ${order.orderNumber} cancelled by customer ${req.user.id}. Stock restored.`);
 
@@ -711,6 +762,21 @@ export const updateOwnerOrderStatus = async (req, res) => {
     }
 
     await order.save();
+
+    // Dispatch status update notification to customer
+    try {
+      const shopName = order.shops[shopIndex]?.shopName || 'Shop';
+      await Notification.create({
+        recipientId: order.customerId,
+        type: `ORDER_${status}`,
+        title: `Order Update: ${status.replace('_', ' ')}`,
+        message: `Your order #${order.orderNumber} fulfillment status was updated to "${status.replace('_', ' ')}" by ${shopName}.`,
+        relatedOrderId: order._id,
+        relatedShopId: order.shops[shopIndex]?.shopId
+      });
+    } catch (notifErr) {
+      logger.warn('Failed to dispatch status update notification:', notifErr.message);
+    }
 
     logger.info(`Owner ${ownerId} updated order ${order.orderNumber} to ${status}`);
 

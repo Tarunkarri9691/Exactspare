@@ -25,9 +25,32 @@ const notificationSchema = new mongoose.Schema(
         'APPLICATION_APPROVED',
         'APPLICATION_REJECTED',
         'CORRECTION_REQUESTED',
+        'ORDER_PLACED',
+        'ORDER_CONFIRMED',
+        'ORDER_PROCESSING',
+        'ORDER_READY_FOR_DISPATCH',
+        'ORDER_SHIPPED',
+        'ORDER_DELIVERED',
+        'ORDER_CANCELLED',
+        'NEW_ORDER_RECEIVED',
+        'ORDER_STATUS_UPDATED',
+        'REVIEW_SUBMITTED',
+        'WISHLIST_ALERT',
         'SYSTEM'
       ],
       default: 'SYSTEM'
+    },
+    relatedOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order',
+      default: null,
+      index: true
+    },
+    relatedShopId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Shop',
+      default: null,
+      index: true
     },
     relatedId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -44,6 +67,7 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
+notificationSchema.index({ recipientId: 1, isRead: 1 });
 notificationSchema.index({ recipientId: 1, createdAt: -1 });
 
 const Notification = mongoose.model('Notification', notificationSchema);

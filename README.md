@@ -1,7 +1,7 @@
 # EXACTSPARE — Vehicle Spare Parts Finder
 
-> **Module 6: Shopping Cart, Secure Checkout, Orders & Shop Owner Order Management**  
-> Complete enterprise-grade shopping cart and order lifecycle platform. Features persistent customer cart in MongoDB with real-time stock and price revalidation, robust checkout with delivery address validation, Cash on Delivery (COD) payment flow, atomic conditional inventory deduction with compensating rollback to guarantee 100% stock consistency without overselling, historical snapshot preservation of products and addresses, unified customer order tracking with visual status timeline, customer-initiated order cancellation with automatic stock restoration, and dedicated shop-owner order management dashboard enforcing strict multi-tenant data isolation and valid status transitions (`PLACED` → `CONFIRMED` → `PROCESSING` → `READY_FOR_DISPATCH` → `SHIPPED` → `DELIVERED`).
+> **Module 7: Notifications, Customer Wishlist, Product Reviews & Ratings**  
+> Complete customer engagement and marketplace trust suite. Features a reliable in-app notification system with unread counters, persistent customer wishlists in MongoDB with vehicle compatibility specs and instant move-to-cart transfers, verified buyer reviews restricted strictly to customers with `DELIVERED` orders containing the product, complete star breakdown aggregation, review moderation, and author edit/deletion controls.
 
 ---
 
@@ -174,6 +174,34 @@ npm run build
 ---
 
 ## 6. Verification Results
+
+### Module 7: Notifications, Wishlist, Reviews & Ratings Test Suite (24/24 Passed — 100%)
+```text
+✔ [PASS 1] Customer notification automatically generated upon order placement (ORDER_PLACED)
+✔ [PASS 2] Shop owner notification automatically generated for new incoming order (NEW_ORDER_RECEIVED)
+✔ [PASS 3] GET /api/notifications/unread-count returns verified unread tally (1)
+✔ [PASS 4] PATCH /api/notifications/:id/read successfully marks notification as read
+✔ [PASS 5] Cross-user notification isolation: Customer 2 blocked from modifying Customer 1's notification
+✔ [PASS 6] PATCH /api/notifications/read-all cleanly clears all unread notifications for recipient
+✔ [PASS 7] DELETE /api/notifications/:id removes notification securely from database
+✔ [PASS 8] Cross-user deletion rejection: Customer 2 blocked from deleting Shop Owner's notification
+✔ [PASS 9] POST /api/wishlist/items successfully added product to customer wishlist
+✔ [PASS 10] Duplicate wishlist addition safely handled without duplicate entries in MongoDB
+✔ [PASS 11] GET /api/wishlist returns populated spare parts, verified pricing (₹1,800), and shop details
+✔ [PASS 12] Wishlist persistence verified in MongoDB across queries
+✔ [PASS 13] Move to Cart successfully transferred item from wishlist to cart and cleared from wishlist
+✔ [PASS 14] DELETE /api/wishlist/items/:productId removes item cleanly from wishlist
+✔ [PASS 15] Strict verification: Review rejected with HTTP 403 when order has not reached DELIVERED state
+✔ [PASS 16] Verified customer submitted review successfully for delivered product (5 stars)
+✔ [PASS 17] Duplicate review attempt for the same product and order rejected with HTTP 400
+✔ [PASS 18] Shop owner strictly prohibited from reviewing their own product (HTTP 403 Forbidden)
+✔ [PASS 19] Invalid rating (7 stars) strictly rejected with HTTP 400 validation error
+✔ [PASS 20] GET /api/products/:productId/reviews accurately calculates average rating (5.0), total reviews (1), and distribution
+✔ [PASS 21] Author successfully edited their review and SparePart average rating recalculated (5.0 → 4.0)
+✔ [PASS 22] Cross-user review edit blocked with HTTP 403 (Customer 2 cannot modify Customer 1's review)
+✔ [PASS 23] Author deleted review successfully; product ratings cleanly reset to 0
+✔ [PASS 24] Zero regressions: Module 2 Auth, Module 5 Search, and Module 6 Orders continue operating seamlessly
+```
 
 ### Module 6: Cart, Checkout, Orders & Management Test Suite (18/18 Passed — 100%)
 ```text

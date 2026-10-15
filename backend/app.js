@@ -14,6 +14,9 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import ownerOrderRoutes from './routes/ownerOrderRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import productReviewRoutes from './routes/productReviewRoutes.js';
 import notFoundHandler from './middleware/notFoundHandler.js';
 import errorHandler from './middleware/errorHandler.js';
 import validateOriginCSRF from './middleware/csrfMiddleware.js';
@@ -103,6 +106,9 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/owner/orders', ownerOrderRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/products', productReviewRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Centralized 404 Route Handler
 app.use(notFoundHandler);

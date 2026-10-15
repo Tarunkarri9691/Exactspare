@@ -116,6 +116,18 @@ const sparePartSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
       index: true
+    },
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+      index: true
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+      min: 0
     }
   },
   {

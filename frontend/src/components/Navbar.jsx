@@ -2,20 +2,32 @@ import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
+import { useNotifications } from '../context/NotificationContext';
+import NotificationDropdown from './NotificationDropdown';
 import './Navbar.css';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(prev => !prev);
+    setMobileMenuOpen((prev) => !prev);
+    setNotifDropdownOpen(false);
   };
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
+    setNotifDropdownOpen(false);
+  };
+
+  const toggleNotifDropdown = () => {
+    setNotifDropdownOpen((prev) => !prev);
   };
 
   const handleLogout = async () => {
@@ -53,7 +65,7 @@ const Navbar = () => {
 
         {/* Module Badge */}
         <div className="module-badge-nav">
-          <span className="badge badge-orange">Module 6 • Cart & Orders</span>
+          <span className="badge badge-orange">Module 7 • Wishlist & Reviews</span>
         </div>
 
         {/* Desktop Navigation */}
@@ -80,6 +92,21 @@ const Navbar = () => {
             Find Shops
           </NavLink>
 
+          {/* Customer Wishlist Link */}
+          {(!user || user.role === 'CUSTOMER') && (
+            <NavLink 
+              to="/wishlist" 
+              className={({ isActive }) => `nav-link nav-wishlist-btn ${isActive ? 'active' : ''}`}
+              title="Saved Wishlist"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" className="nav-wishlist-icon">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+              <span>Wishlist</span>
+              {wishlistCount > 0 && <span className="nav-wishlist-badge">{wishlistCount}</span>}
+            </NavLink>
+          )}
+
           {/* Cart Link (for Customers / Guests) */}
           {(!user || user.role === 'CUSTOMER') && (
             <NavLink 
@@ -99,6 +126,30 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
+              {/* Notification Bell Button with Unread Badge */}
+              <div className="nav-notif-container">
+                <button
+                  type="button"
+                  className="nav-notif-btn"
+                  onClick={toggleNotifDropdown}
+                  title="Notifications"
+                  aria-label="View notifications"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="nav-notif-icon">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="nav-notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                  )}
+                </button>
+
+                <NotificationDropdown
+                  isOpen={notifDropdownOpen}
+                  onClose={() => setNotifDropdownOpen(false)}
+                />
+              </div>
+
               {user?.role === 'CUSTOMER' && (
                 <NavLink 
                   to="/orders" 
@@ -228,17 +279,34 @@ const Navbar = () => {
             </NavLink>
 
             {(!user || user.role === 'CUSTOMER') && (
-              <NavLink 
-                to="/cart" 
-                className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
-                onClick={closeMobileMenu}
-              >
-                Shopping Cart {cartCount > 0 ? `(${cartCount})` : ''}
-              </NavLink>
+              <>
+                <NavLink 
+                  to="/wishlist" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  My Saved Wishlist {wishlistCount > 0 ? `(${wishlistCount})` : ''}
+                </NavLink>
+                <NavLink 
+                  to="/cart" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  Shopping Cart {cartCount > 0 ? `(${cartCount})` : ''}
+                </NavLink>
+              </>
             )}
 
             {isAuthenticated ? (
               <>
+                <NavLink 
+                  to="/notifications" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  Notifications {unreadCount > 0 ? `(${unreadCount} unread)` : ''}
+                </NavLink>
+
                 {user?.role === 'CUSTOMER' && (
                   <NavLink 
                     to="/orders" 

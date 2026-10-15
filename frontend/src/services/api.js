@@ -938,5 +938,243 @@ export const updateOwnerOrderStatus = async (orderId, status, note = '') => {
   }
 };
 
+/**
+ * ========================================================
+ * MODULE 7: NOTIFICATIONS, WISHLIST, REVIEWS & RATINGS
+ * ========================================================
+ */
+
+/**
+ * Notifications APIs
+ */
+export const fetchNotifications = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/notifications', { params });
+    return {
+      success: true,
+      data: response.data?.data?.notifications || [],
+      unreadCount: response.data?.unreadCount || 0,
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch notifications'
+    };
+  }
+};
+
+export const fetchUnreadNotificationCount = async () => {
+  try {
+    const response = await apiClient.get('/notifications/unread-count');
+    return {
+      success: true,
+      unreadCount: response.data?.data?.unreadCount ?? 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      unreadCount: 0,
+      error: error.response?.data?.message || 'Failed to get unread count'
+    };
+  }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const response = await apiClient.patch(`/notifications/${notificationId}/read`);
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.notification
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to mark notification as read'
+    };
+  }
+};
+
+export const markAllNotificationsAsRead = async () => {
+  try {
+    const response = await apiClient.patch('/notifications/read-all');
+    return {
+      success: true,
+      message: response.data?.message,
+      modifiedCount: response.data?.data?.modifiedCount
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to mark all as read'
+    };
+  }
+};
+
+export const deleteNotificationApi = async (notificationId) => {
+  try {
+    const response = await apiClient.delete(`/notifications/${notificationId}`);
+    return {
+      success: true,
+      message: response.data?.message
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to delete notification'
+    };
+  }
+};
+
+/**
+ * Customer Wishlist APIs
+ */
+export const fetchWishlist = async () => {
+  try {
+    const response = await apiClient.get('/wishlist');
+    return {
+      success: true,
+      data: response.data?.data?.items || [],
+      count: response.data?.count || 0,
+      unavailableItemsCount: response.data?.data?.unavailableItemsCount || 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch wishlist'
+    };
+  }
+};
+
+export const addToWishlistApi = async (productId) => {
+  try {
+    const response = await apiClient.post('/wishlist/items', { productId });
+    return {
+      success: true,
+      message: response.data?.message,
+      count: response.data?.data?.count || 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to add item to wishlist'
+    };
+  }
+};
+
+export const removeFromWishlistApi = async (productId) => {
+  try {
+    const response = await apiClient.delete(`/wishlist/items/${productId}`);
+    return {
+      success: true,
+      message: response.data?.message,
+      count: response.data?.data?.count || 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to remove item from wishlist'
+    };
+  }
+};
+
+export const moveWishlistToCartApi = async (productId, quantity = 1) => {
+  try {
+    const response = await apiClient.post(`/wishlist/items/${productId}/move-to-cart`, { quantity });
+    return {
+      success: true,
+      message: response.data?.message,
+      cart: response.data?.data?.cart,
+      wishlistCount: response.data?.data?.wishlistCount
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to move item to cart'
+    };
+  }
+};
+
+/**
+ * Product Reviews & Ratings APIs
+ */
+export const fetchProductReviews = async (productId, params = {}) => {
+  try {
+    const response = await apiClient.get(`/products/${productId}/reviews`, { params });
+    return {
+      success: true,
+      reviews: response.data?.data?.reviews || [],
+      summary: response.data?.data?.summary || {
+        averageRating: 0,
+        totalReviews: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        verifiedCount: 0
+      },
+      pagination: response.data?.data?.pagination || { page: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to load product reviews',
+      reviews: [],
+      summary: {
+        averageRating: 0,
+        totalReviews: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        verifiedCount: 0
+      }
+    };
+  }
+};
+
+export const submitProductReview = async (productId, reviewData) => {
+  try {
+    const response = await apiClient.post(`/products/${productId}/reviews`, reviewData);
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to submit review'
+    };
+  }
+};
+
+export const updateProductReview = async (reviewId, updateData) => {
+  try {
+    const response = await apiClient.patch(`/reviews/${reviewId}`, updateData);
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to update review'
+    };
+  }
+};
+
+export const deleteProductReview = async (reviewId) => {
+  try {
+    const response = await apiClient.delete(`/reviews/${reviewId}`);
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to delete review'
+    };
+  }
+};
+
 export default apiClient;
 

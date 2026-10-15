@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { fetchPartByIdApi } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
+import ProductReviewsSection from '../components/ProductReviewsSection';
 import './PartDetailsPage.css';
 
 const PartDetailsPage = () => {
@@ -10,6 +12,7 @@ const PartDetailsPage = () => {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { user } = useAuth();
+  const { isItemInWishlist, toggleWishlist } = useWishlist();
 
   const [part, setPart] = useState(null);
   const [activePhoto, setActivePhoto] = useState(null);
@@ -18,6 +21,7 @@ const PartDetailsPage = () => {
   const [selectedQty, setSelectedQty] = useState(1);
   const [cartFeedback, setCartFeedback] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [wishlistPending, setWishlistPending] = useState(false);
 
   useEffect(() => {
     const loadPart = async () => {
@@ -70,6 +74,32 @@ const PartDetailsPage = () => {
     }
   };
 
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      navigate(`/login?redirect=/parts/${id}`);
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      setCartFeedback({ type: 'error', text: 'Only customer accounts can maintain a wishlist.' });
+      return;
+    }
+
+    setWishlistPending(true);
+    const res = await toggleWishlist(part._id);
+    setWishlistPending(false);
+
+    if (res.success) {
+      const inW = isItemInWishlist(part._id);
+      setCartFeedback({
+        type: 'success',
+        text: inW ? 'Item added to your wishlist!' : 'Item removed from your wishlist.'
+      });
+      setTimeout(() => setCartFeedback(null), 3000);
+    } else {
+      setCartFeedback({ type: 'error', text: res.error || 'Failed to update wishlist.' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="part-details-page-root">
@@ -103,6 +133,7 @@ const PartDetailsPage = () => {
 
   const isOutOfStock = part.stockQuantity <= 0;
   const shop = part.shopId;
+  const inWishlist = isItemInWishlist(part._id);
 
   return (
     <div className="part-details-page-root">
@@ -118,44 +149,47 @@ const PartDetailsPage = () => {
 
         {/* Product Grid */}
         <div className="part-details-layout">
-          {/* Left Column: Image Gallery */}
+          {/* Left Column: Gallery */}
           <div className="part-gallery-column">
-            <div className="main-image-viewport">
+            <div className="main-photo-stage">
               {activePhoto ? (
-                <img src={activePhoto} alt={part.partName} className="main-product-img" />
+                <img
+                  src={`http://localhost:5000${activePhoto}`}
+                  alt={part.partName}
+                  className="main-display-img"
+                />
               ) : (
-                <div className="main-image-placeholder">
-                  <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
+                <div className="no-photo-box">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <circle cx="8" cy="10" r="2"></circle>
+                    <line x1="21" y1="15" x2="16" y2="10"></line>
+                    <line x1="11" y1="15" x2="14" y2="12"></line>
                   </svg>
                   <span>No Product Image Uploaded</span>
                 </div>
               )}
             </div>
 
-            {/* Thumbnail Strip */}
             {part.imagePaths && part.imagePaths.length > 1 && (
-              <div className="thumbnail-strip">
-                {part.imagePaths.map((imgPath, index) => (
+              <div className="thumbnail-tray">
+                {part.imagePaths.map((path, idx) => (
                   <button
-                    key={index}
+                    key={idx}
                     type="button"
-                    className={`thumb-button ${activePhoto === imgPath ? 'thumb-active' : ''}`}
-                    onClick={() => setActivePhoto(imgPath)}
+                    className={`thumb-btn ${activePhoto === path ? 'active-thumb' : ''}`}
+                    onClick={() => setActivePhoto(path)}
                   >
-                    <img src={imgPath} alt={`Thumb ${index + 1}`} />
+                    <img src={`http://localhost:5000${path}`} alt={`Thumbnail ${idx + 1}`} />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Right Column: Specifications & Pricing */}
+          {/* Right Column: Key Details & Purchasing */}
           <div className="part-info-column">
-            <div className="part-category-badges">
-              <span className="badge badge-navy">{part.vehicleType}</span>
+            <div className="part-header-tags">
               <span className="badge badge-orange">{part.category}</span>
               <span className="badge badge-navy">{part.condition}</span>
             </div>
@@ -166,6 +200,19 @@ const PartDetailsPage = () => {
               <span className="mfg-tag">Brand: <strong>{part.manufacturer}</strong></span>
               <span className="meta-divider">•</span>
               <span className="sku-tag">Part #: <code>{part.partNumber}</code></span>
+              <span className="meta-divider">•</span>
+              {part.averageRating > 0 ? (
+                <a href="#product-reviews" className="pdp-rating-summary-link">
+                  <span className="pdp-rating-star">★</span>
+                  <strong>{part.averageRating.toFixed(1)}</strong>
+                  <span className="pdp-rating-count">({part.totalReviews} review{part.totalReviews !== 1 ? 's' : ''})</span>
+                </a>
+              ) : (
+                <a href="#product-reviews" className="pdp-rating-summary-link no-reviews">
+                  <span className="pdp-rating-star">☆</span>
+                  <span>No reviews yet</span>
+                </a>
+              )}
             </div>
 
             {/* Price & Stock Card */}
@@ -197,19 +244,17 @@ const PartDetailsPage = () => {
                 )}
               </div>
 
-              {/* Cart Feedback Message */}
+              {/* Cart / Wishlist Feedback Message */}
               {cartFeedback && (
-                <div className={`cart-feedback-banner ${cartFeedback.type}`}>
+                <div
+                  className={`auth-alert ${cartFeedback.type === 'success' ? 'success-alert' : 'error-alert'}`}
+                  style={{ marginTop: '14px', marginBottom: '4px' }}
+                >
                   <span>{cartFeedback.text}</span>
-                  {cartFeedback.type === 'success' && (
-                    <Link to="/cart" className="view-cart-link">
-                      View Cart →
-                    </Link>
-                  )}
                 </div>
               )}
 
-              {/* Add to Cart Actions */}
+              {/* Add to Cart & Wishlist Actions */}
               {!isOutOfStock && (
                 <div className="cart-purchase-actions">
                   <div className="qty-selector-wrap">
@@ -258,6 +303,21 @@ const PartDetailsPage = () => {
                     >
                       Buy Now
                     </button>
+
+                    {(!user || user.role === 'CUSTOMER') && (
+                      <button
+                        type="button"
+                        className={`btn btn-outline pdp-wishlist-btn ${inWishlist ? 'in-wishlist' : ''}`}
+                        onClick={handleToggleWishlist}
+                        disabled={wishlistPending}
+                        title={inWishlist ? 'Remove from saved wishlist' : 'Save part to wishlist'}
+                      >
+                        <svg viewBox="0 0 24 24" fill={inWishlist ? '#ff6b00' : 'none'} stroke={inWishlist ? '#ff6b00' : 'currentColor'} strokeWidth="2" className="btn-icon">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        <span>{inWishlist ? 'In Wishlist' : 'Wishlist'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -274,29 +334,21 @@ const PartDetailsPage = () => {
 
                 {part.compatibleMakes && part.compatibleMakes.length > 0 && (
                   <div className="spec-row">
-                    <span className="spec-label">Compatible Makes</span>
-                    <span className="spec-val">
-                      {part.compatibleMakes.map((m, i) => (
-                        <span key={i} className="compat-pill">{m}</span>
-                      ))}
-                    </span>
+                    <span className="spec-label">Compatible Makes / Brands</span>
+                    <span className="spec-val">{part.compatibleMakes.join(', ')}</span>
                   </div>
                 )}
 
                 {part.compatibleModels && part.compatibleModels.length > 0 && (
                   <div className="spec-row">
                     <span className="spec-label">Compatible Models</span>
-                    <span className="spec-val">
-                      {part.compatibleModels.map((m, i) => (
-                        <span key={i} className="compat-pill">{m}</span>
-                      ))}
-                    </span>
+                    <span className="spec-val">{part.compatibleModels.join(', ')}</span>
                   </div>
                 )}
 
                 {part.compatibleYears && part.compatibleYears.length > 0 && (
                   <div className="spec-row">
-                    <span className="spec-label">Supported Years</span>
+                    <span className="spec-label">Model Years</span>
                     <span className="spec-val">{part.compatibleYears.join(', ')}</span>
                   </div>
                 )}
@@ -376,6 +428,12 @@ const PartDetailsPage = () => {
             )}
           </div>
         </div>
+
+        {/* Module 7: Product Reviews & Verified Ratings Section */}
+        <ProductReviewsSection
+          productId={part._id}
+          partShopOwnerId={shop?.ownerId || shop?.owner}
+        />
       </div>
     </div>
   );
