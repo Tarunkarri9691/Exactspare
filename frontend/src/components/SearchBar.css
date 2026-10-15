@@ -1,0 +1,158 @@
+.search-section-wrapper {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.search-badge-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.search-card-form {
+  background-color: var(--color-bg-card);
+  padding: 18px 24px;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 36px -8px rgba(11, 25, 44, 0.18), 0 2px 6px rgba(11, 25, 44, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+@media (min-width: 768px) {
+  .search-card-form {
+    grid-template-columns: 1.5fr 1.1fr 1.2fr auto;
+  }
+}
+
+.search-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-navy-light);
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.search-input, .search-select {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 40px;
+  background-color: var(--color-bg-muted);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  color: var(--color-text-main);
+  transition: all var(--transition-fast);
+}
+
+.search-input:focus, .search-select:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: var(--color-orange-primary);
+  box-shadow: 0 0 0 3px var(--color-orange-glow);
+}
+
+.search-input::placeholder {
+  color: #94A3B8;
+  font-size: 0.88rem;
+}
+
+.search-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
+
+.search-action-group {
+  display: flex;
+}
+
+.search-submit-btn {
+  height: 48px;
+  padding: 0 26px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .search-submit-btn {
+    width: auto;
+  }
+}
+
+/* Feature In-Development Banner */
+.search-notice-banner {
+  margin-top: var(--spacing-md);
+  background-color: #FFFBEB;
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #92400E;
+}
+
+.notice-icon {
+  flex-shrink: 0;
+  color: #D97706;
+  margin-top: 2px;
+}
+
+.notice-body {
+  flex: 1;
+  font-size: 0.88rem;
+}
+
+.notice-body strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+  color: #78350F;
+}
+
+.notice-body p {
+  line-height: 1.45;
+}
+
+.notice-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #92400E;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.notice-close-btn:hover {
+  color: #78350F;
+}

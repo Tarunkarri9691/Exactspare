@@ -1,0 +1,39 @@
+{
+  "name": "exactspare-backend",
+  "version": "1.0.0",
+  "description": "Backend API for EXACTSPARE - Vehicle Spare Parts Finder",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "init-admin": "node scripts/initAdmin.js",
+    "test": "node scripts/testAuthModule.js",
+    "test:m3": "node scripts/testShopApplicationModule.js",
+    "test:m4": "node scripts/testInventoryModule.js"
+  },
+  "keywords": [
+    "exactspare",
+    "spare-parts",
+    "express",
+    "mongodb",
+    "mongoose"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.10.0",
+    "multer": "^2.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

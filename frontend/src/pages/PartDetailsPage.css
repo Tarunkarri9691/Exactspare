@@ -1,0 +1,348 @@
+/* Spare Part Details Page Styles */
+.part-details-page-root {
+  min-height: calc(100vh - 180px);
+  padding: 32px 0 80px;
+  background-color: var(--color-bg-light, #f8f9fa);
+}
+
+.part-details-container {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.part-details-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.part-details-breadcrumb a {
+  color: var(--color-navy-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.part-details-breadcrumb a:hover {
+  color: var(--color-orange-primary);
+}
+
+.breadcrumb-sep {
+  color: #adb5bd;
+}
+
+.breadcrumb-current {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Two-column layout */
+.part-details-layout {
+  display: grid;
+  grid-template-columns: 460px 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .part-details-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Left Column: Image Gallery */
+.part-gallery-column {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(11, 25, 44, 0.04);
+}
+
+.main-image-viewport {
+  width: 100%;
+  height: 380px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #f1f3f5;
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.main-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #adb5bd;
+}
+
+.thumbnail-strip {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.thumb-button {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  border: 2px solid var(--color-border);
+  background: #f1f3f5;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.thumb-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-button.thumb-active {
+  border-color: var(--color-orange-primary);
+}
+
+/* Right Column: Info & Specs */
+.part-info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.part-category-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.product-page-title {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--color-navy-primary);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.product-meta-subline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+}
+
+.sku-tag code {
+  background: #f0f4f8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  color: var(--color-navy-primary);
+}
+
+/* Pricing Card */
+.pricing-stock-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(11, 25, 44, 0.04);
+}
+
+.price-tag-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.inr-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.inr-amount {
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: var(--color-navy-primary);
+  letter-spacing: -0.02em;
+}
+
+.tax-inclusive-tag {
+  font-size: 0.8rem;
+  color: #007e33;
+  font-weight: 600;
+}
+
+.stock-status-wrap {
+  border-top: 1px solid #f1f3f5;
+  padding-top: 12px;
+}
+
+.stock-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.badge-in {
+  background: rgba(0, 200, 81, 0.12);
+  color: #007e33;
+}
+
+.badge-out {
+  background: rgba(255, 68, 68, 0.12);
+  color: #cc0000;
+}
+
+/* Compatibility Specs Card */
+.compatibility-specs-card,
+.part-desc-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(11, 25, 44, 0.04);
+}
+
+.specs-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-navy-primary);
+  margin: 0 0 16px;
+}
+
+.specs-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 0.9rem;
+}
+
+.spec-row:last-child {
+  border-bottom: none;
+}
+
+.spec-label {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.spec-val {
+  color: var(--color-navy-primary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.compat-pill {
+  background: #f0f4f8;
+  color: var(--color-navy-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.part-desc-body {
+  color: var(--color-navy-primary);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* Verified Seller Card */
+.verified-seller-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(11, 25, 44, 0.04);
+  border-left: 4px solid var(--color-orange-primary);
+}
+
+.seller-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.seller-badge-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #007e33;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.seller-subtitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #007e33;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+}
+
+.seller-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-navy-primary);
+  margin: 2px 0 0;
+}
+
+.seller-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.seller-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--color-navy-primary);
+}
+
+.seller-detail-row svg {
+  color: var(--color-orange-primary);
+  flex-shrink: 0;
+}

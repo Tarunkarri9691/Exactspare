@@ -1,0 +1,217 @@
+.dashboard-page-root {
+  padding: var(--spacing-2xl) 0 var(--spacing-3xl);
+  background-color: var(--color-bg-main);
+  flex: 1;
+}
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.dashboard-welcome-card {
+  background: linear-gradient(135deg, var(--color-navy-primary) 0%, var(--color-navy-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  color: var(--color-text-white);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 768px) {
+  .dashboard-welcome-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.welcome-badge-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.welcome-title {
+  font-size: 1.85rem;
+  color: var(--color-text-white);
+  margin-bottom: 6px;
+}
+
+.welcome-subtitle {
+  font-size: 0.95rem;
+  color: #CBD5E1;
+  max-width: 600px;
+}
+
+.user-contact-mini {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 240px;
+}
+
+.contact-detail-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.contact-label {
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.contact-val {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+/* Shortcut Banner */
+.search-shortcut-banner {
+  background-color: #FFFFFF;
+  border: 1.5px solid var(--color-orange-primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  box-shadow: 0 4px 16px rgba(255, 101, 0, 0.08);
+}
+
+@media (min-width: 768px) {
+  .search-shortcut-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.shortcut-text h3 {
+  font-size: 1.2rem;
+  color: var(--color-navy-primary);
+  margin-bottom: 4px;
+}
+
+.shortcut-text p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.shortcut-btn {
+  flex-shrink: 0;
+}
+
+/* Sections */
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title-row h2 {
+  font-size: 1.35rem;
+  color: var(--color-navy-primary);
+}
+
+.customer-categories-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 640px) {
+  .customer-categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .customer-categories-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.customer-category-tile {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all var(--transition-fast);
+}
+
+.customer-category-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-orange-primary);
+  box-shadow: var(--shadow-subtle);
+}
+
+.tile-icon {
+  font-size: 1.8rem;
+}
+
+.tile-body h4 {
+  font-size: 1rem;
+  color: var(--color-navy-primary);
+  margin-bottom: 2px;
+}
+
+.tile-body p {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Orders Placeholder */
+.orders-placeholder-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.empty-orders-icon {
+  width: 64px;
+  height: 64px;
+  background-color: var(--color-bg-muted);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-md);
+}
+
+.orders-placeholder-card h3 {
+  font-size: 1.25rem;
+  color: var(--color-navy-primary);
+  margin-bottom: 8px;
+}
+
+.orders-placeholder-card p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-lg);
+}

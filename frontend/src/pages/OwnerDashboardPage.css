@@ -1,0 +1,328 @@
+.owner-welcome-card {
+  border-left: 5px solid var(--color-orange-primary);
+}
+
+/* Notifications Box */
+.owner-notifications-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.notifications-header {
+  margin-bottom: var(--spacing-sm);
+}
+
+.notif-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notif-title-row svg {
+  color: var(--color-orange-primary);
+}
+
+.notif-title-row h3 {
+  font-size: 1.1rem;
+  color: var(--color-navy-primary);
+  margin: 0;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-item {
+  background-color: var(--color-bg-muted);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.88rem;
+}
+
+.notification-item.unread {
+  background-color: #FFF7ED;
+  border-left: 3px solid var(--color-orange-primary);
+}
+
+.notif-content strong {
+  display: block;
+  color: var(--color-navy-primary);
+  margin-bottom: 2px;
+}
+
+.notif-content p {
+  color: var(--color-text-main);
+  margin-bottom: 4px;
+}
+
+.notif-time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.mark-read-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-navy-light);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mark-read-btn:hover {
+  background-color: #FFFFFF;
+  color: var(--color-orange-primary);
+}
+
+/* Application Status Card */
+.application-status-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.status-indicator-col {
+  flex-shrink: 0;
+}
+
+.status-bubble {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.gray-bubble {
+  background-color: var(--color-bg-muted);
+  color: #64748B;
+}
+
+.blue-bubble {
+  background-color: #E0F2FE;
+  color: #0284C7;
+}
+
+.orange-bubble {
+  background-color: #FFF7ED;
+  color: var(--color-orange-primary);
+}
+
+.amber-bubble {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
+
+.green-bubble {
+  background-color: #ECFDF5;
+  color: var(--color-success);
+}
+
+.red-bubble {
+  background-color: #FEF2F2;
+  color: #EF4444;
+}
+
+.status-main-col {
+  flex: 1;
+}
+
+.status-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.app-id-tag {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--color-text-muted);
+}
+
+.status-main-col h3 {
+  font-size: 1.4rem;
+  color: var(--color-navy-primary);
+  margin-bottom: 6px;
+}
+
+.status-main-col p {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: var(--spacing-md);
+}
+
+.verified-success-text {
+  color: #065F46 !important;
+  font-weight: 500;
+}
+
+.app-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  background-color: var(--color-bg-muted);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: 0.88rem;
+}
+
+@media (min-width: 640px) {
+  .app-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.guidance-box {
+  background-color: #F8FAFC;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: var(--color-navy-light);
+  margin-bottom: var(--spacing-lg);
+}
+
+.guidance-box.pending-box {
+  background-color: #FFFBEB;
+  border-color: #FDE68A;
+  color: #92400E;
+}
+
+.admin-feedback-banner {
+  background-color: #FFF7ED;
+  border-left: 4px solid var(--color-orange-primary);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: 0.9rem;
+}
+
+.admin-feedback-banner.error-banner {
+  background-color: #FEF2F2;
+  border-left-color: #EF4444;
+}
+
+.admin-feedback-banner strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.admin-feedback-banner p {
+  margin: 0;
+  color: #7C2D12;
+}
+
+.admin-feedback-banner.error-banner p {
+  color: #991B1B;
+}
+
+.approved-perks-box {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-sm);
+}
+
+.perk-chip {
+  background-color: #ECFDF5;
+  color: #047857;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid #A7F3D0;
+}
+
+.status-action-row {
+  margin-top: var(--spacing-md);
+}
+
+/* Card Borders */
+.approved-verified-card {
+  border-left: 5px solid var(--color-success);
+}
+
+.pending-review-card {
+  border-left: 5px solid var(--color-orange-primary);
+}
+
+.correction-card {
+  border-left: 5px solid #F59E0B;
+}
+
+.rejected-card {
+  border-left: 5px solid #EF4444;
+}
+
+.draft-card {
+  border-left: 5px solid #0284C7;
+}
+
+/* Inventory Preview */
+.inventory-preview-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.inventory-preview-icon {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(255, 101, 0, 0.1);
+  color: var(--color-orange-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.inventory-preview-card h3 {
+  font-size: 1.25rem;
+  color: var(--color-navy-primary);
+  margin-bottom: 6px;
+}
+
+.inventory-preview-card p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  max-width: 620px;
+  line-height: 1.5;
+  margin-bottom: var(--spacing-md);
+}
+
+.status-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}

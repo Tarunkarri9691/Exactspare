@@ -1,0 +1,145 @@
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+import { logger } from './logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Absolute directory paths
+const BASE_UPLOADS_DIR = path.resolve(__dirname, '..', 'uploads');
+const SHOPS_DIR = path.join(BASE_UPLOADS_DIR, 'shops');
+const PARTS_DIR = path.join(BASE_UPLOADS_DIR, 'parts');
+const DOCUMENTS_DIR = path.join(BASE_UPLOADS_DIR, 'documents');
+
+// Ensure upload directories exist
+[SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Configure Multer Disk Storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (file.fieldname === 'shopImages') {
+      cb(null, SHOPS_DIR);
+    } else if (file.fieldname === 'partImages' || file.fieldname === 'images') {
+      cb(null, PARTS_DIR);
+    } else if (file.fieldname === 'verificationDocuments') {
+      cb(null, DOCUMENTS_DIR);
+    } else {
+      cb(new Error(`Unexpected upload field: ${file.fieldname}`), null);
+    }
+  },
+  filename: (req, file, cb) => {
+    const randomHex = crypto.randomBytes(8).toString('hex');
+    const timestamp = Date.now();
+    const cleanExt = path.extname(file.originalname).toLowerCase();
+    let prefix = 'upload';
+    if (file.fieldname === 'shopImages') prefix = 'shop';
+    else if (file.fieldname === 'partImages' || file.fieldname === 'images') prefix = 'part';
+    else if (file.fieldname === 'verificationDocuments') prefix = 'doc';
+
+    cb(null, `${prefix}-${timestamp}-${randomHex}${cleanExt}`);
+  }
+});
+
+// Strict MIME Type & Extension Filter
+const fileFilter = (req, file, cb) => {
+  const allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp'];
+  const allowedDocMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (file.fieldname === 'shopImages' || file.fieldname === 'partImages' || file.fieldname === 'images') {
+    if (allowedImageMimes.includes(file.mimetype) && ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Invalid image type. Only JPG, PNG, and WebP images are permitted.'), false);
+  }
+
+  if (file.fieldname === 'verificationDocuments') {
+    if (allowedDocMimes.includes(file.mimetype) && ['.pdf', '.jpg', '.jpeg', '.png'].includes(ext)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Invalid document type. Only PDF, JPG, and PNG are allowed for business verification documents.'), false);
+  }
+
+  cb(new Error(`Unknown upload field: ${file.fieldname}`), false);
+};
+
+// Multer upload configurations
+export const uploadShopApplicationFiles = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB per file
+    files: 8
+  }
+}).fields([
+  { name: 'shopImages', maxCount: 5 },
+  { name: 'verificationDocuments', maxCount: 3 }
+]);
+
+export const uploadPartImages = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB per file
+    files: 5 // Max 5 images per spare part
+  }
+}).array('partImages', 5);
+
+export const uploadShopImages = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 5
+  }
+}).array('shopImages', 5);
+
+/**
+ * Safely delete an uploaded file by relative path without crashing
+ * Prevents traversal attacks by resolving against BASE_UPLOADS_DIR
+ */
+export const deleteUploadedFile = (relativePath) => {
+  if (!relativePath || typeof relativePath !== 'string') return;
+  try {
+    const cleanRel = relativePath.replace(/^\/+/, '').replace(/^uploads[\\/]/, '');
+    const absolutePath = path.resolve(BASE_UPLOADS_DIR, cleanRel);
+
+    // Security check: Must reside within BASE_UPLOADS_DIR
+    if (!absolutePath.startsWith(BASE_UPLOADS_DIR)) {
+      logger.warn(`Blocked attempt to delete file outside uploads directory: ${relativePath}`);
+      return;
+    }
+
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+      logger.debug(`Cleaned up file: ${absolutePath}`);
+    }
+  } catch (err) {
+    logger.error(`Error deleting file ${relativePath}:`, err);
+  }
+};
+
+/**
+ * Clean up an array of uploaded files if an operation fails
+ */
+export const cleanupUploadedFiles = (files = []) => {
+  if (!Array.isArray(files)) return;
+  files.forEach((file) => {
+    if (file && file.path && fs.existsSync(file.path)) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (err) {
+        logger.error(`Failed to clean up file ${file.path}:`, err);
+      }
+    }
+  });
+};
+
+export { SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR, BASE_UPLOADS_DIR };
