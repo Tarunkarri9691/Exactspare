@@ -1482,6 +1482,73 @@ export const fetchAdminAuditLogs = async (params = {}) => {
   }
 };
 
+/**
+ * Module 10: AI Assistant, Smart Recommendations & Product Comparison
+ */
+
+export const fetchAiAssistantResponse = async ({ message, history = [], context = {} }) => {
+  try {
+    const response = await apiClient.post('/ai/assistant', { message, history, context });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Assistant service is temporarily unavailable.'
+    };
+  }
+};
+
+export const fetchAiStatus = async () => {
+  try {
+    const response = await apiClient.get('/ai/status');
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to check AI status'
+    };
+  }
+};
+
+export const fetchRecommendations = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/recommendations', { params });
+    return {
+      success: true,
+      recommendations: response.data?.recommendations || []
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch recommendations',
+      recommendations: []
+    };
+  }
+};
+
+export const compareProducts = async (productIds = []) => {
+  try {
+    const response = await apiClient.post('/products/compare', { productIds });
+    return {
+      success: true,
+      products: response.data?.products || [],
+      metrics: response.data?.metrics || {}
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to compare products',
+      products: []
+    };
+  }
+};
+
 export default apiClient;
 
 

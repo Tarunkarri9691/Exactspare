@@ -16,6 +16,11 @@ export const config = {
     enabled: process.env.PAYMENT_GATEWAY_ENABLED === 'true',
     keyId: process.env.PAYMENT_GATEWAY_KEY_ID || '',
     keySecret: process.env.PAYMENT_GATEWAY_KEY_SECRET || ''
+  },
+  ai: {
+    geminiApiKey: process.env.GEMINI_API_KEY || '',
+    openAiApiKey: process.env.OPENAI_API_KEY || '',
+    model: process.env.AI_MODEL || ''
   }
 };
 

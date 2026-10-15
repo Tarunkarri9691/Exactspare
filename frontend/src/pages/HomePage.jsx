@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import SearchResultCard from '../components/SearchResultCard';
 import SystemHealthWidget from '../components/SystemHealthWidget';
+import SmartRecommendations from '../components/SmartRecommendations';
 import { fetchSearchMetadata, fetchRecentAvailableParts, fetchPublicShops } from '../services/api';
 import './HomePage.css';
 
@@ -203,6 +204,16 @@ const HomePage = () => {
               <p>Once approved shop owners publish spare parts with images, pricing, and compatibility, they will appear here in real time.</p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Module 10: Smart Recommendations & Top Verified Picks */}
+      <section className="home-recommendations-wrapper">
+        <div className="container">
+          <SmartRecommendations
+            title="Smart Recommendations & Top Picks"
+            subtitle="Verified, in-stock components from approved local shops."
+          />
         </div>
       </section>
 

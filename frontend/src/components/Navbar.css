@@ -378,3 +378,40 @@
 .mobile-logout-btn {
   margin: 8px 16px;
 }
+
+.nav-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.15) 0%, rgba(255, 107, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 107, 0, 0.4);
+  color: #FF6B00;
+  padding: 0.45rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-ai-btn:hover {
+  background: #FF6B00;
+  color: #FFFFFF;
+  border-color: #FF6B00;
+  box-shadow: 0 0 12px rgba(255, 107, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.sparkle-icon {
+  font-size: 0.95rem;
+}
+
+.mobile-ai-btn {
+  color: #FF6B00 !important;
+  font-weight: 700 !important;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}

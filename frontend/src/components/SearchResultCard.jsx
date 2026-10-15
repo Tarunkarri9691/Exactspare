@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useCompare } from '../context/CompareContext';
 import './SearchResultCard.css';
 
 const SearchResultCard = ({ part, userLocation }) => {
@@ -11,6 +12,7 @@ const SearchResultCard = ({ part, userLocation }) => {
   const { addItem } = useCart();
   const { user } = useAuth();
   const { isItemInWishlist, toggleWishlist } = useWishlist();
+  const { addToCompare, isInCompare, openCompareModal } = useCompare();
   const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -235,6 +237,24 @@ const SearchResultCard = ({ part, userLocation }) => {
               </svg>
               <span>Map</span>
             </a>
+
+            <button
+              type="button"
+              className={`btn btn-outline btn-compare-quick ${isInCompare(part._id) ? 'btn-navy-active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const res = addToCompare(part);
+                if (res.success) {
+                  openCompareModal();
+                } else {
+                  alert(res.message);
+                }
+              }}
+              title="Add part to compare tray"
+            >
+              <span>⚖️</span>
+            </button>
           </div>
         </div>
       </div>

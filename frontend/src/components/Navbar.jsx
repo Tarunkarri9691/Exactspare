@@ -7,7 +7,7 @@ import { useNotifications } from '../context/NotificationContext';
 import NotificationDropdown from './NotificationDropdown';
 import './Navbar.css';
 
-const Navbar = () => {
+const Navbar = ({ onOpenAi }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
@@ -65,7 +65,7 @@ const Navbar = () => {
 
         {/* Module Badge */}
         <div className="module-badge-nav">
-          <span className="badge badge-orange">Module 7 • Wishlist & Reviews</span>
+          <span className="badge badge-orange">Module 10 • AI Assistant & Recommendations</span>
         </div>
 
         {/* Desktop Navigation */}
@@ -91,6 +91,22 @@ const Navbar = () => {
           >
             Find Shops
           </NavLink>
+
+          <NavLink 
+            to="/compare" 
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          >
+            ⚖️ Compare
+          </NavLink>
+
+          <button
+            type="button"
+            className="nav-ai-btn"
+            onClick={onOpenAi}
+            title="Ask AI Spare-Parts Assistant"
+          >
+            <span className="sparkle-icon">✨</span> AI Assistant
+          </button>
 
           {/* Customer Wishlist Link */}
           {(!user || user.role === 'CUSTOMER') && (
@@ -277,6 +293,25 @@ const Navbar = () => {
             >
               Find Shops
             </NavLink>
+
+            <NavLink 
+              to="/compare" 
+              className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+              onClick={closeMobileMenu}
+            >
+              ⚖️ Compare Parts
+            </NavLink>
+
+            <button 
+              type="button"
+              className="mobile-nav-link mobile-ai-btn" 
+              onClick={() => {
+                closeMobileMenu();
+                if (onOpenAi) onOpenAi();
+              }}
+            >
+              ✨ Ask AI Assistant
+            </button>
 
             {(!user || user.role === 'CUSTOMER') && (
               <>

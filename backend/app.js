@@ -18,6 +18,8 @@ import wishlistRoutes from './routes/wishlistRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import productReviewRoutes from './routes/productReviewRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import recommendationRoutes from './routes/recommendationRoutes.js';
 import helmet from 'helmet';
 import notFoundHandler from './middleware/notFoundHandler.js';
 import errorHandler from './middleware/errorHandler.js';
@@ -123,6 +125,8 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/products', productReviewRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Centralized 404 Route Handler
 app.use(notFoundHandler);

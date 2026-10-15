@@ -124,6 +124,7 @@ export const CartProvider = ({ children }) => {
         setCartMessage,
         refreshCart,
         addItem,
+        addToCart: addItem,
         updateQty,
         removeItem,
         clearAll

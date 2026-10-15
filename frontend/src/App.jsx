@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { CompareProvider } from './context/CompareContext';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -51,36 +52,43 @@ import AdminPartsModerationPage from './pages/AdminPartsModerationPage';
 import AdminReviewModerationPage from './pages/AdminReviewModerationPage';
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 
+// Module 10 Pages: Comparison
+import ComparePage from './pages/ComparePage';
+
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
           <NotificationProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<MainLayout />}>
-                  {/* Public Routes */}
-                  <Route index element={<HomePage />} />
-                  <Route path="login" element={<LoginPage />} />
-                  <Route path="register" element={<CustomerRegisterPage />} />
-                  <Route path="register-owner" element={<OwnerRegisterPage />} />
-                  <Route path="shop-owner" element={<OwnerRegisterPage />} />
-                  <Route path="unauthorized" element={<UnauthorizedPage />} />
+            <CompareProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<MainLayout />}>
+                    {/* Public Routes */}
+                    <Route index element={<HomePage />} />
+                    <Route path="login" element={<LoginPage />} />
+                    <Route path="register" element={<CustomerRegisterPage />} />
+                    <Route path="register-owner" element={<OwnerRegisterPage />} />
+                    <Route path="shop-owner" element={<OwnerRegisterPage />} />
+                    <Route path="unauthorized" element={<UnauthorizedPage />} />
 
-                  {/* Public Shop & Inventory Discovery (Module 4 & 5) */}
-                  <Route path="shops" element={<PublicShopsPage />} />
-                  <Route path="shops/:id" element={<ShopDetailsPage />} />
-                  <Route path="parts" element={<PublicPartsPage />} />
-                  <Route path="parts/:id" element={<PartDetailsPage />} />
+                    {/* Module 10: Product Comparison */}
+                    <Route path="compare" element={<ComparePage />} />
 
-                  {/* Module 6: Shopping Cart */}
-                  <Route path="cart" element={<CartPage />} />
+                    {/* Public Shop & Inventory Discovery (Module 4 & 5) */}
+                    <Route path="shops" element={<PublicShopsPage />} />
+                    <Route path="shops/:id" element={<ShopDetailsPage />} />
+                    <Route path="parts" element={<PublicPartsPage />} />
+                    <Route path="parts/:id" element={<PartDetailsPage />} />
 
-                  {/* Authenticated Notifications (All roles) */}
-                  <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'OWNER', 'ADMIN']} />}>
-                    <Route path="notifications" element={<NotificationsPage />} />
-                  </Route>
+                    {/* Module 6: Shopping Cart */}
+                    <Route path="cart" element={<CartPage />} />
+
+                    {/* Authenticated Notifications (All roles) */}
+                    <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'OWNER', 'ADMIN']} />}>
+                      <Route path="notifications" element={<NotificationsPage />} />
+                    </Route>
 
                   {/* Role-Protected Customer Routes (Module 6 & 7) */}
                   <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
@@ -124,7 +132,8 @@ function App() {
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Routes>
-            </BrowserRouter>
+              </BrowserRouter>
+            </CompareProvider>
           </NotificationProvider>
         </WishlistProvider>
       </CartProvider>

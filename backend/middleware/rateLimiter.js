@@ -33,6 +33,22 @@ export const orderLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for AI Assistant queries
+ * Protects AI provider quotas and backend computation resources.
+ */
+export const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 40, // Limit each IP to 40 assistant interactions per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    statusCode: 429,
+    message: 'AI Assistant query limit reached. Please wait a few moments before sending more questions.'
+  }
+});
+
+/**
  * General API rate limiter for non-sensitive public endpoints
  * Protects server resources while allowing normal high-frequency browsing.
  */
@@ -48,4 +64,4 @@ export const apiLimiter = rateLimit({
   }
 });
 
-export default { authLimiter, orderLimiter, apiLimiter };
+export default { authLimiter, orderLimiter, aiLimiter, apiLimiter };

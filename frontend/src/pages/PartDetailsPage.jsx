@@ -4,7 +4,9 @@ import { fetchPartByIdApi } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useCompare } from '../context/CompareContext';
 import ProductReviewsSection from '../components/ProductReviewsSection';
+import SmartRecommendations from '../components/SmartRecommendations';
 import './PartDetailsPage.css';
 
 const PartDetailsPage = () => {
@@ -13,6 +15,7 @@ const PartDetailsPage = () => {
   const { addItem } = useCart();
   const { user } = useAuth();
   const { isItemInWishlist, toggleWishlist } = useWishlist();
+  const { addToCompare, isInCompare, openCompareModal } = useCompare();
 
   const [part, setPart] = useState(null);
   const [activePhoto, setActivePhoto] = useState(null);
@@ -318,6 +321,24 @@ const PartDetailsPage = () => {
                         <span>{inWishlist ? 'In Wishlist' : 'Wishlist'}</span>
                       </button>
                     )}
+
+                    <button
+                      type="button"
+                      className={`btn btn-outline pdp-compare-btn ${isInCompare(part._id) ? 'btn-navy' : ''}`}
+                      onClick={() => {
+                        const res = addToCompare(part);
+                        if (res.success) {
+                          openCompareModal();
+                        } else {
+                          setCartFeedback({ type: 'error', text: res.message });
+                          setTimeout(() => setCartFeedback(null), 3500);
+                        }
+                      }}
+                      title="Add to product comparison matrix"
+                    >
+                      <span style={{ marginRight: '4px' }}>⚖️</span>
+                      <span>{isInCompare(part._id) ? 'Comparing' : 'Compare'}</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -434,6 +455,17 @@ const PartDetailsPage = () => {
           productId={part._id}
           partShopOwnerId={shop?.ownerId || shop?.owner}
         />
+
+        {/* Module 10: Smart Recommendations & Compatible Alternatives */}
+        <div style={{ marginTop: '40px' }}>
+          <SmartRecommendations
+            productId={part._id}
+            category={part.category}
+            vehicleType={part.vehicleType}
+            title="Compatible Alternatives & Similar Parts"
+            subtitle="Verified in-stock alternatives from approved shops matching this vehicle specification."
+          />
+        </div>
       </div>
     </div>
   );

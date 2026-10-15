@@ -461,3 +461,104 @@ The EXACTSPARE platform implements layered, defense-in-depth protections designe
 ✔ [PASS 14] Unauthenticated requests to protected APIs are blocked with HTTP 401 Unauthorized
 ✔ [PASS 15] Invalid or tampered tokens are rejected with HTTP 401 Unauthorized
 ```
+
+---
+
+## 10. Module 10: AI Spare-Parts Assistant, Smart Recommendations & Product Comparison
+
+### Overview
+Module 10 introduces intelligent natural-language vehicle spare-parts search and comparison while strictly maintaining database ground truth:
+1. **AI Provider Abstraction (`aiProvider.js`)**: Configurable adapter supporting Google Gemini (`GEMINI_API_KEY`) and OpenAI (`OPENAI_API_KEY`) with an 8-second request abort timeout.
+2. **Rule-Based NLP Fallback (`nlpSearchFallback.js`)**: Operates 100% autonomously without external API keys or during cloud outages. Parses vehicle type, make, model, year, category, and budget thresholds.
+3. **Verified Catalog Search Tool (`catalogSearchTool.js`)**: Strictly queries MongoDB for `isPublished: true`, `isArchived: false`, `isModerated: false`, and active/approved shops. Never fabricates products or inventory.
+4. **Smart Recommendations (`recommendationService.js`, `<SmartRecommendations />`)**: Surfaces compatible alternatives, alternative brands, and relevant category parts on the Homepage and Product Details pages.
+5. **Specification Comparison (`productCompareService.js`, `<ProductCompareModal />`, `/compare`)**: Allows customer side-by-side comparison of 2 to 4 parts with lowest-price badge and spec matrix.
+
+### Module 10 Endpoints
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/ai/assistant` | Natural language chat assistant querying real catalog (rate-limited via `aiLimiter`) |
+| `GET` | `/api/ai/status` | Reports AI provider configuration status and fallback mode |
+| `GET` | `/api/recommendations` | Smart compatible recommendations based on product/category/vehicle |
+| `POST` | `/api/products/compare` | Compares 2 to 4 products and returns verified specification matrix |
+
+### Module 10 Test Suite Results (12/12 Passed — 100%)
+```text
+TEST 1: Search for an existing spare part using natural language
+  ✓ Assistant endpoint returned HTTP 200
+  ✓ Response status is success: true
+  ✓ Assistant returned a conversational response string
+  ✓ Assistant returned products array
+  ✓ Assistant found matching products for Honda Activa
+  ✓ Results contain brake pads for Honda Activa
+
+TEST 2: Ask a question with missing vehicle details
+  ✓ Assistant endpoint returned HTTP 200 for vague query
+  ✓ Response marked success
+  ✓ Returned missingDetails list
+  ✓ Identified missing vehicle type, make, or model
+  ✓ Returned helpful follow-up prompt chips
+
+TEST 3: Verify that returned products exist in MongoDB
+  ✓ Verified products exist in MongoDB
+
+TEST 4: Verify that unpublished parts and unapproved shops are excluded
+  ✓ Unpublished part is strictly excluded from results
+  ✓ Part from unapproved shop is strictly excluded from results
+  ✓ Recommendations returned HTTP 200
+  ✓ Unpublished part excluded from recommendations
+  ✓ Part from unapproved shop excluded from recommendations
+
+TEST 5: Check that prices and stock reflect current database values
+  ✓ Returned price matches MongoDB price
+  ✓ Returned stock matches MongoDB stock
+
+TEST 6: Test budget filters and vehicle compatibility
+  ✓ Budget query returned HTTP 200
+  ✓ Found products within budget
+  ✓ Product price is within requested budget (<= ₹1000)
+  ✓ Product vehicleType is compatible
+
+TEST 7: Compare two to four products
+  ✓ Compare 2 products returned HTTP 200
+  ✓ Compare marked success
+  ✓ Returned 2 verified products in matrix
+  ✓ Metrics count matches 2
+  ✓ Correctly identified lowest priced product
+  ✓ Computed correct price difference
+  ✓ Compare 3 products returned HTTP 200
+  ✓ Returned 3 verified products in matrix
+  ✓ Compare 4 products returned HTTP 200
+  ✓ Returned 4 verified products in matrix
+  ✓ Compare 1 product rejected with HTTP 400 Bad Request
+  ✓ Compare 5 products rejected with HTTP 400 Bad Request
+
+TEST 8: Handle unavailable AI configuration
+  ✓ AI status endpoint returned HTTP 200
+  ✓ isConfigured is boolean
+  ✓ Explicitly states fallback mode: rule_based_nlp
+  ✓ Assistant operates smoothly in fallback mode without crashing
+  ✓ Fallback assistant returned success: true
+
+TEST 9: Handle provider timeout and API errors
+  ✓ Handled message without unhandled promise rejection or crash
+  ✓ Returned successful payload with verified inventory
+
+TEST 10: Confirm API keys never appear in frontend code or client responses
+  ✓ No Google Gemini key leaked in API response
+  ✓ No OpenAI key leaked in API response
+  ✓ apiKey property not exposed to client
+  ✓ Scanned frontend/src: Zero API keys or secrets detected
+
+TEST 11: Test rate limits and invalid requests
+  ✓ Empty message rejected with HTTP 400
+  ✓ Missing message rejected with HTTP 400
+  ✓ Oversized message (>2000 chars) rejected with HTTP 400
+
+TEST 12: Verify that Modules 1–9 continue working
+  ✓ System Health check returned HTTP 200
+  ✓ Public shops endpoint returned HTTP 200
+  ✓ Shops array returned
+  ✓ Spare parts search endpoint returned HTTP 200
+  ✓ Parts array returned
+```
