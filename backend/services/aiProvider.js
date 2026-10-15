@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { logger } from '../utils/logger.js';
 import { extractSearchIntent, generateFallbackResponse } from './nlpSearchFallback.js';
 
@@ -216,4 +217,110 @@ Please provide a helpful, natural advice response to the user query based on the
   }
 };
 
-export default { getAiProviderStatus, processAssistantMessage };
+/**
+ * Analyze an uploaded spare part image using Vision API (or autonomous fallback)
+ */
+export const analyzeImageForPart = async ({ filePath, mimeType, originalName }) => {
+  const status = getAiProviderStatus();
+
+  // If no AI key configured, use clean autonomous visual fallback
+  if (!status.isConfigured) {
+    const hint = originalName ? originalName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') : '';
+    return {
+      isAiPowered: false,
+      providerMode: 'autonomous_fallback',
+      probablePartName: hint || 'Automotive Component',
+      suggestedCategory: 'Maintenance & Fluids',
+      vehicleType: null,
+      keywords: hint ? [hint] : ['brake', 'filter', 'spark plug', 'battery']
+    };
+  }
+
+  try {
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64Data = imageBuffer.toString('base64');
+
+    if (status.provider === 'gemini') {
+      const apiKey = process.env.GEMINI_API_KEY;
+      const model = process.env.AI_MODEL || 'gemini-1.5-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const prompt = `Identify this automotive spare part from the image.
+Respond STRICTLY with valid JSON in this exact format:
+{
+  "probablePartName": "e.g. Front Disc Brake Pad",
+  "suggestedCategory": "e.g. Brakes",
+  "vehicleType": "Bike" or "Car" or "Scooter" or "Bicycle" or "Other" or null,
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}`;
+
+      const payload = {
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType || 'image/jpeg',
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 300
+        }
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Gemini vision HTTP error: ${response.status}`);
+      }
+
+      const resData = await response.json();
+      const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          isAiPowered: true,
+          providerMode: 'gemini_vision',
+          probablePartName: parsed.probablePartName || 'Identified Auto Component',
+          suggestedCategory: parsed.suggestedCategory || 'Other',
+          vehicleType: parsed.vehicleType || null,
+          keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [parsed.probablePartName]
+        };
+      }
+    }
+  } catch (err) {
+    logger.warn('Image vision analysis failed or timed out:', err.message);
+  }
+
+  // Fallback if vision call failed
+  const hint = originalName ? originalName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') : '';
+  return {
+    isAiPowered: false,
+    providerMode: 'fallback_after_error',
+    probablePartName: hint || 'Automotive Component',
+    suggestedCategory: 'Other',
+    vehicleType: null,
+    keywords: hint ? [hint] : ['brake', 'filter', 'spark plug', 'battery']
+  };
+};
+
+export default { getAiProviderStatus, processAssistantMessage, analyzeImageForPart };

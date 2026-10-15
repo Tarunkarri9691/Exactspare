@@ -13,9 +13,10 @@ const BASE_UPLOADS_DIR = path.resolve(__dirname, '..', 'uploads');
 const SHOPS_DIR = path.join(BASE_UPLOADS_DIR, 'shops');
 const PARTS_DIR = path.join(BASE_UPLOADS_DIR, 'parts');
 const DOCUMENTS_DIR = path.join(BASE_UPLOADS_DIR, 'documents');
+const TEMP_DIR = path.join(BASE_UPLOADS_DIR, 'temp');
 
 // Ensure upload directories exist
-[SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR].forEach((dir) => {
+[SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR, TEMP_DIR].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -30,6 +31,8 @@ const storage = multer.diskStorage({
       cb(null, PARTS_DIR);
     } else if (file.fieldname === 'verificationDocuments') {
       cb(null, DOCUMENTS_DIR);
+    } else if (file.fieldname === 'image' || file.fieldname === 'searchImage') {
+      cb(null, TEMP_DIR);
     } else {
       cb(new Error(`Unexpected upload field: ${file.fieldname}`), null);
     }
@@ -42,6 +45,7 @@ const storage = multer.diskStorage({
     if (file.fieldname === 'shopImages') prefix = 'shop';
     else if (file.fieldname === 'partImages' || file.fieldname === 'images') prefix = 'part';
     else if (file.fieldname === 'verificationDocuments') prefix = 'doc';
+    else if (file.fieldname === 'image' || file.fieldname === 'searchImage') prefix = 'search';
 
     cb(null, `${prefix}-${timestamp}-${randomHex}${cleanExt}`);
   }
@@ -53,7 +57,13 @@ const fileFilter = (req, file, cb) => {
   const allowedDocMimes = ['application/pdf', 'image/jpeg', 'image/png'];
   const ext = path.extname(file.originalname).toLowerCase();
 
-  if (file.fieldname === 'shopImages' || file.fieldname === 'partImages' || file.fieldname === 'images') {
+  if (
+    file.fieldname === 'shopImages' ||
+    file.fieldname === 'partImages' ||
+    file.fieldname === 'images' ||
+    file.fieldname === 'image' ||
+    file.fieldname === 'searchImage'
+  ) {
     if (allowedImageMimes.includes(file.mimetype) && ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
       return cb(null, true);
     }
@@ -101,6 +111,14 @@ export const uploadShopImages = multer({
   }
 }).array('shopImages', 5);
 
+export const uploadSearchImage = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+}).single('image');
+
 /**
  * Safely delete an uploaded file by relative path without crashing
  * Prevents traversal attacks by resolving against BASE_UPLOADS_DIR
@@ -142,4 +160,4 @@ export const cleanupUploadedFiles = (files = []) => {
   });
 };
 
-export { SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR, BASE_UPLOADS_DIR };
+export { SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR, TEMP_DIR, BASE_UPLOADS_DIR };

@@ -194,6 +194,51 @@ export const getPartById = async (req, res, next) => {
 };
 
 /**
+ * Direct lookup of published spare part by barcode
+ * @route GET /api/products/barcode/:barcode
+ */
+export const getPartByBarcode = async (req, res, next) => {
+  try {
+    const { barcode } = req.params;
+    if (!barcode || !barcode.trim()) {
+      return res.status(400).json({
+        success: false,
+        status: 'error',
+        message: 'Barcode parameter is required.'
+      });
+    }
+
+    const cleanBarcode = barcode.trim();
+    const part = await SparePart.findOne({
+      barcode: cleanBarcode,
+      isPublished: true,
+      isArchived: false,
+      isModerated: false
+    })
+      .populate('shopId', 'name description category address contact openingHours images isApproved isActive')
+      .lean();
+
+    if (!part || !part.shopId || !part.shopId.isApproved || !part.shopId.isActive) {
+      return res.status(404).json({
+        success: false,
+        status: 'error',
+        message: `No verified active spare part found for barcode "${cleanBarcode}".`
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      status: 'ok',
+      data: part,
+      part
+    });
+  } catch (error) {
+    logger.error('Error in getPartByBarcode:', error);
+    next(error);
+  }
+};
+
+/**
  * Authenticated Shop Owner creates a new spare part listing
  * @route POST /api/parts
  */
@@ -227,6 +272,9 @@ export const createPart = async (req, res, next) => {
       engineDetails = '',
       manufacturer,
       partNumber,
+      barcode,
+      manufacturerPartNumber = '',
+      alternatePartNumbers,
       condition = 'NEW',
       price,
       stockQuantity,
@@ -262,6 +310,14 @@ export const createPart = async (req, res, next) => {
       errors.push('Condition must be NEW or USED.');
     }
 
+    let cleanBarcode = null;
+    if (barcode && typeof barcode === 'string' && barcode.trim()) {
+      cleanBarcode = barcode.trim();
+      if (!/^[a-zA-Z0-9\-_.]+$/.test(cleanBarcode) || cleanBarcode.length < 4 || cleanBarcode.length > 64) {
+        errors.push('Barcode must be between 4 and 64 alphanumeric characters, dashes, or dots.');
+      }
+    }
+
     if (errors.length > 0) {
       cleanupUploadedFiles(req.files);
       return res.status(400).json({
@@ -295,6 +351,9 @@ export const createPart = async (req, res, next) => {
       engineDetails: engineDetails ? engineDetails.trim() : '',
       manufacturer: manufacturer.trim(),
       partNumber: partNumber.trim(),
+      barcode: cleanBarcode,
+      manufacturerPartNumber: manufacturerPartNumber ? String(manufacturerPartNumber).trim() : '',
+      alternatePartNumbers: parseArrayInput(alternatePartNumbers),
       condition: condition.toUpperCase(),
       price: parsedPrice,
       stockQuantity: parsedStock,
@@ -492,6 +551,9 @@ export const updatePart = async (req, res, next) => {
       engineDetails,
       manufacturer,
       partNumber,
+      barcode,
+      manufacturerPartNumber,
+      alternatePartNumbers,
       condition,
       price,
       stockQuantity,
@@ -585,6 +647,27 @@ export const updatePart = async (req, res, next) => {
 
     if (engineDetails !== undefined) {
       part.engineDetails = engineDetails.trim();
+    }
+
+    if (barcode !== undefined) {
+      if (barcode && typeof barcode === 'string' && barcode.trim()) {
+        const cleanBarcode = barcode.trim();
+        if (!/^[a-zA-Z0-9\-_.]+$/.test(cleanBarcode) || cleanBarcode.length < 4 || cleanBarcode.length > 64) {
+          errors.push('Barcode must be between 4 and 64 alphanumeric characters, dashes, or dots.');
+        } else {
+          part.barcode = cleanBarcode;
+        }
+      } else {
+        part.barcode = null;
+      }
+    }
+
+    if (manufacturerPartNumber !== undefined) {
+      part.manufacturerPartNumber = typeof manufacturerPartNumber === 'string' ? manufacturerPartNumber.trim() : '';
+    }
+
+    if (alternatePartNumbers !== undefined) {
+      part.alternatePartNumbers = parseArrayInput(alternatePartNumbers);
     }
 
     if (errors.length > 0) {

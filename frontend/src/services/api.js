@@ -1549,6 +1549,76 @@ export const compareProducts = async (productIds = []) => {
   }
 };
 
+/**
+ * Module 11: Advanced Search, Barcode/QR Scanning & Image Search APIs
+ */
+
+export const fetchSearchSuggestions = async (query = '') => {
+  if (!query || !query.trim()) return { success: true, data: { suggestions: [] } };
+  try {
+    const response = await apiClient.get('/search/suggestions', { params: { q: query.trim() } });
+    return {
+      success: true,
+      data: response.data?.data || { suggestions: [] }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch suggestions',
+      data: { suggestions: [] }
+    };
+  }
+};
+
+export const searchByIdentifier = async (code = '') => {
+  try {
+    const response = await apiClient.get('/search/identifier', { params: { code } });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to search by identifier'
+    };
+  }
+};
+
+export const fetchPartByBarcode = async (barcode = '') => {
+  try {
+    const response = await apiClient.get(`/products/barcode/${encodeURIComponent(barcode)}`);
+    return {
+      success: true,
+      data: response.data?.part || null
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'No spare part found matching barcode'
+    };
+  }
+};
+
+export const searchByImage = async (formData) => {
+  try {
+    const response = await apiClient.post('/search/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to process image search'
+    };
+  }
+};
+
 export default apiClient;
 
 

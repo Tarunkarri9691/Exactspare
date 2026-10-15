@@ -15,7 +15,8 @@
     "test:m6": "node scripts/testOrderModule.js",
     "test:m7": "node scripts/testModule7.js",
     "test:m8": "node scripts/testModule8.js",
-    "test:m10": "node scripts/testModule10.js"
+    "test:m10": "node scripts/testModule10.js",
+    "test:m11": "node scripts/testModule11.js"
   },
   "keywords": [
     "exactspare",

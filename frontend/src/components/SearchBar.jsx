@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { geocodeAddress } from '../services/api';
+import BarcodeScannerModal from './BarcodeScannerModal';
+import ImageSearchModal from './ImageSearchModal';
 import './SearchBar.css';
 
 const VEHICLE_OPTIONS = [
@@ -23,6 +25,8 @@ const SearchBar = ({ onSearch }) => {
   const [loadingGeo, setLoadingGeo] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [showImageSearchModal, setShowImageSearchModal] = useState(false);
   const navigate = useNavigate();
 
   // Handle GPS location request
@@ -203,16 +207,45 @@ const SearchBar = ({ onSearch }) => {
 
         {/* Advanced Filters Toggle (Make, Model, Radius) */}
         <div className="search-secondary-bar">
-          <button
-            type="button"
-            className="btn-toggle-advanced"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-            </svg>
-            <span>{showAdvanced ? 'Hide Vehicle Specs' : '+ Specific Make, Model & Radius'}</span>
-          </button>
+          <div className="secondary-left-actions">
+            <button
+              type="button"
+              className="btn-toggle-advanced"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              <span>{showAdvanced ? 'Hide Vehicle Specs' : '+ Specific Make, Model & Radius'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-secondary-action"
+              onClick={() => setShowScannerModal(true)}
+              title="Scan Barcode or QR Code"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+                <rect x="7" y="7" width="10" height="10" rx="1" />
+              </svg>
+              <span>📷 Scan Barcode / QR</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-secondary-action"
+              onClick={() => setShowImageSearchModal(true)}
+              title="Visual Search by Product Photo"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>🖼️ Search by Image</span>
+            </button>
+          </div>
 
           {coords && (
             <span className="gps-active-badge">
@@ -278,6 +311,26 @@ const SearchBar = ({ onSearch }) => {
           </div>
         )}
       </form>
+
+      {/* Barcode & QR Scanner Dialog */}
+      <BarcodeScannerModal
+        isOpen={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onSelectPart={(part) => {
+          setShowScannerModal(false);
+          navigate(`/parts/${part._id}`);
+        }}
+      />
+
+      {/* Visual Image Search Dialog */}
+      <ImageSearchModal
+        isOpen={showImageSearchModal}
+        onClose={() => setShowImageSearchModal(false)}
+        onSelectPart={(part) => {
+          setShowImageSearchModal(false);
+          navigate(`/parts/${part._id}`);
+        }}
+      />
     </div>
   );
 };

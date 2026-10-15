@@ -78,6 +78,22 @@ const sparePartSchema = new mongoose.Schema(
       trim: true,
       index: true
     },
+    barcode: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: [64, 'Barcode cannot exceed 64 characters']
+    },
+    manufacturerPartNumber: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [100, 'Manufacturer part number cannot exceed 100 characters']
+    },
+    alternatePartNumbers: {
+      type: [String],
+      default: []
+    },
     condition: {
       type: String,
       enum: {
@@ -179,6 +195,8 @@ sparePartSchema.pre('save', function (next) {
 sparePartSchema.index({ shopId: 1, isArchived: 1, isPublished: 1 });
 sparePartSchema.index({ vehicleType: 1, category: 1, availabilityStatus: 1, isPublished: 1, isArchived: 1 });
 sparePartSchema.index({ partName: 'text', partNumber: 'text', manufacturer: 'text', description: 'text' });
+sparePartSchema.index({ barcode: 1 }, { sparse: true });
+sparePartSchema.index({ manufacturerPartNumber: 1 }, { sparse: true });
 
 const SparePart = mongoose.model('SparePart', sparePartSchema);
 

@@ -1,8 +1,11 @@
+import mongoose from 'mongoose';
 import SparePart from '../models/SparePart.js';
 import Shop from '../models/Shop.js';
 import { calculateDistanceKm, DISTANCE_DISCLAIMER } from '../utils/distance.js';
 import { logger } from '../utils/logger.js';
+import { analyzeImageForPart } from '../services/aiProvider.js';
 import https from 'https';
+import fs from 'fs';
 
 /**
  * Escape special characters for safe regular expression querying
@@ -222,7 +225,8 @@ export const searchNearbyParts = async (req, res) => {
     const partQuery = {
       shopId: { $in: eligibleShopIds },
       isPublished: true,
-      isArchived: false
+      isArchived: false,
+      isModerated: false
     };
 
     // In-stock availability
@@ -230,6 +234,11 @@ export const searchNearbyParts = async (req, res) => {
     if (isInStockOnly) {
       partQuery.availabilityStatus = 'IN_STOCK';
       partQuery.stockQuantity = { $gt: 0 };
+    }
+
+    // Barcode exact match
+    if (req.query.barcode && req.query.barcode.trim()) {
+      partQuery.barcode = req.query.barcode.trim();
     }
 
     // Vehicle Type
@@ -240,6 +249,28 @@ export const searchNearbyParts = async (req, res) => {
     // Category
     if (category && category !== 'ALL') {
       partQuery.category = new RegExp(`^${escapeRegex(category.trim())}$`, 'i');
+    }
+
+    // Subcategory
+    if (req.query.subcategory && req.query.subcategory.trim()) {
+      partQuery.subcategory = new RegExp(escapeRegex(req.query.subcategory.trim()), 'i');
+    }
+
+    // Manufacturer / Brand
+    const mfg = req.query.manufacturer || req.query.brand;
+    if (mfg && mfg.trim() && mfg !== 'ALL') {
+      partQuery.manufacturer = new RegExp(escapeRegex(mfg.trim()), 'i');
+    }
+
+    // Condition
+    if (req.query.condition && req.query.condition !== 'ALL') {
+      partQuery.condition = req.query.condition.toUpperCase();
+    }
+
+    // Customer Rating
+    const minRating = req.query.minRating || req.query.rating;
+    if (minRating && !isNaN(Number(minRating)) && Number(minRating) > 0) {
+      partQuery.averageRating = { $gte: Number(minRating) };
     }
 
     // Exact or Prefix Part Number
@@ -269,18 +300,45 @@ export const searchNearbyParts = async (req, res) => {
       if (nMaxPrice !== undefined) partQuery.price.$lte = nMaxPrice;
     }
 
-    // General text search 'q' across relevant fields
+    // General text search 'q' across relevant fields (support multi-term and exact phrases)
     if (q && q.trim() !== '') {
-      const qRegex = new RegExp(escapeRegex(q.trim()), 'i');
-      partQuery.$or = [
-        { partName: qRegex },
-        { partNumber: qRegex },
-        { manufacturer: qRegex },
-        { category: qRegex },
-        { description: qRegex },
-        { compatibleMakes: qRegex },
-        { compatibleModels: qRegex }
-      ];
+      const cleanQ = q.trim();
+      const tokens = cleanQ.split(/\s+/).filter(Boolean);
+
+      if (tokens.length > 1) {
+        // Multi-word search: all tokens must match at least one relevant field
+        partQuery.$and = tokens.map((token) => {
+          const tRegex = new RegExp(escapeRegex(token), 'i');
+          return {
+            $or: [
+              { partName: tRegex },
+              { partNumber: tRegex },
+              { barcode: tRegex },
+              { manufacturerPartNumber: tRegex },
+              { manufacturer: tRegex },
+              { category: tRegex },
+              { subcategory: tRegex },
+              { description: tRegex },
+              { compatibleMakes: tRegex },
+              { compatibleModels: tRegex }
+            ]
+          };
+        });
+      } else {
+        const qRegex = new RegExp(escapeRegex(cleanQ), 'i');
+        partQuery.$or = [
+          { partName: qRegex },
+          { partNumber: qRegex },
+          { barcode: qRegex },
+          { manufacturerPartNumber: qRegex },
+          { manufacturer: qRegex },
+          { category: qRegex },
+          { subcategory: qRegex },
+          { description: qRegex },
+          { compatibleMakes: qRegex },
+          { compatibleModels: qRegex }
+        ];
+      }
     }
 
     // 4. Retrieve parts from database
@@ -345,6 +403,16 @@ export const searchNearbyParts = async (req, res) => {
       }
       if (resolvedSortBy === 'price_desc') {
         return b.price - a.price;
+      }
+      if (resolvedSortBy === 'rating' || resolvedSortBy === 'rating_desc') {
+        return (b.averageRating || 0) - (a.averageRating || 0);
+      }
+      if (resolvedSortBy === 'relevance' && q) {
+        const cleanQ = q.toLowerCase().trim();
+        const aExact = (a.partNumber && a.partNumber.toLowerCase() === cleanQ) || (a.barcode && a.barcode.toLowerCase() === cleanQ);
+        const bExact = (b.partNumber && b.partNumber.toLowerCase() === cleanQ) || (b.barcode && b.barcode.toLowerCase() === cleanQ);
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
       }
       // Default: newest
       return new Date(b.createdAt) - new Date(a.createdAt);
@@ -630,5 +698,360 @@ export const geocodeAddress = async (req, res) => {
       success: false,
       message: 'Internal server error while resolving location.'
     });
+  }
+};
+
+/**
+ * Search auto-complete suggestions from verified catalog
+ * @route GET /api/search/suggestions
+ */
+export const getSearchSuggestions = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || !q.trim()) {
+      return res.status(200).json({
+        success: true,
+        data: { suggestions: [] }
+      });
+    }
+
+    const cleanQ = q.trim();
+    if (cleanQ.length > 80) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query cannot exceed 80 characters.'
+      });
+    }
+
+    const activeShops = await Shop.find({ isApproved: true, isActive: true }).select('_id').lean();
+    const activeShopIds = activeShops.map((s) => s._id);
+
+    const regex = new RegExp(escapeRegex(cleanQ), 'i');
+
+    const matchingParts = await SparePart.find({
+      shopId: { $in: activeShopIds },
+      isPublished: true,
+      isArchived: false,
+      isModerated: false,
+      $or: [
+        { partName: regex },
+        { partNumber: regex },
+        { manufacturer: regex },
+        { category: regex },
+        { barcode: regex }
+      ]
+    })
+      .select('partName partNumber manufacturer category barcode vehicleType price stockQuantity imagePaths')
+      .limit(20)
+      .lean();
+
+    const suggestions = [];
+    const seen = new Set();
+
+    for (const part of matchingParts) {
+      if (part.partName && !seen.has(`part:${part.partName.toLowerCase()}`)) {
+        seen.add(`part:${part.partName.toLowerCase()}`);
+        suggestions.push({
+          type: 'part',
+          title: part.partName,
+          text: part.partName,
+          subtitle: `${part.manufacturer || 'OEM'} • ₹${part.price} (${part.vehicleType})`,
+          value: part.partName,
+          partId: part._id
+        });
+      }
+
+      if (part.partNumber && part.partNumber.toLowerCase().includes(cleanQ.toLowerCase()) && !seen.has(`pn:${part.partNumber.toLowerCase()}`)) {
+        seen.add(`pn:${part.partNumber.toLowerCase()}`);
+        suggestions.push({
+          type: 'part_number',
+          title: part.partNumber,
+          text: part.partNumber,
+          subtitle: `Part # for ${part.partName}`,
+          value: part.partNumber,
+          partId: part._id
+        });
+      }
+
+      if (part.barcode && part.barcode.toLowerCase().includes(cleanQ.toLowerCase()) && !seen.has(`bc:${part.barcode.toLowerCase()}`)) {
+        seen.add(`bc:${part.barcode.toLowerCase()}`);
+        suggestions.push({
+          type: 'barcode',
+          title: part.barcode,
+          text: part.barcode,
+          subtitle: `Barcode for ${part.partName}`,
+          value: part.barcode,
+          partId: part._id
+        });
+      }
+
+      if (part.manufacturer && part.manufacturer.toLowerCase().includes(cleanQ.toLowerCase()) && !seen.has(`brand:${part.manufacturer.toLowerCase()}`)) {
+        seen.add(`brand:${part.manufacturer.toLowerCase()}`);
+        suggestions.push({
+          type: 'brand',
+          title: part.manufacturer,
+          text: part.manufacturer,
+          subtitle: 'Manufacturer / Brand',
+          value: part.manufacturer
+        });
+      }
+
+      if (part.category && part.category.toLowerCase().includes(cleanQ.toLowerCase()) && !seen.has(`cat:${part.category.toLowerCase()}`)) {
+        seen.add(`cat:${part.category.toLowerCase()}`);
+        suggestions.push({
+          type: 'category',
+          title: part.category,
+          text: part.category,
+          subtitle: 'Category',
+          value: part.category
+        });
+      }
+
+      if (suggestions.length >= 10) break;
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        query: cleanQ,
+        total: suggestions.length,
+        suggestions: suggestions.slice(0, 10)
+      }
+    });
+  } catch (error) {
+    logger.error('Error in getSearchSuggestions:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve search suggestions.'
+    });
+  }
+};
+
+/**
+ * Identifier search: Barcode, Part Number, or Alternate Part Number
+ * @route GET /api/search/identifier
+ */
+export const searchByIdentifier = async (req, res) => {
+  try {
+    const rawCode = req.query.code || req.query.identifier || req.query.barcode || req.query.partNumber;
+    if (!rawCode || typeof rawCode !== 'string' || !rawCode.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Identifier code is required.'
+      });
+    }
+
+    const cleanCode = rawCode.trim();
+    if (cleanCode.length > 80) {
+      return res.status(400).json({
+        success: false,
+        message: 'Identifier code cannot exceed 80 characters.'
+      });
+    }
+
+    const activeShops = await Shop.find({ isApproved: true, isActive: true })
+      .select('_id name category address contact images isApproved isActive')
+      .lean();
+    const activeShopIds = activeShops.map((s) => s._id);
+    const shopMap = new Map();
+    activeShops.forEach((s) => shopMap.set(s._id.toString(), s));
+
+    const baseFilter = {
+      shopId: { $in: activeShopIds },
+      isPublished: true,
+      isArchived: false,
+      isModerated: false
+    };
+
+    let matchedParts = [];
+    let matchType = 'none';
+
+    // 0. Check if code is a valid MongoDB Product ID (from QR code)
+    if (mongoose.isValidObjectId(cleanCode)) {
+      matchedParts = await SparePart.find({
+        ...baseFilter,
+        _id: cleanCode
+      }).lean();
+      if (matchedParts.length > 0) {
+        matchType = 'product_id';
+      }
+    }
+
+    // 1. Check exact barcode match
+    if (matchedParts.length === 0) {
+      matchedParts = await SparePart.find({
+        ...baseFilter,
+        barcode: cleanCode
+      }).lean();
+      if (matchedParts.length > 0) {
+        matchType = 'barcode';
+      }
+    }
+
+    // 2. If no barcode match, check partNumber
+    if (matchedParts.length === 0) {
+      matchedParts = await SparePart.find({
+        ...baseFilter,
+        partNumber: new RegExp(`^${escapeRegex(cleanCode)}$`, 'i')
+      }).lean();
+      matchType = 'part_number';
+    }
+
+    // 3. If still no match, check manufacturerPartNumber
+    if (matchedParts.length === 0) {
+      matchedParts = await SparePart.find({
+        ...baseFilter,
+        manufacturerPartNumber: new RegExp(`^${escapeRegex(cleanCode)}$`, 'i')
+      }).lean();
+      matchType = 'manufacturer_part_number';
+    }
+
+    // 4. If still no match, check alternatePartNumbers
+    if (matchedParts.length === 0) {
+      matchedParts = await SparePart.find({
+        ...baseFilter,
+        alternatePartNumbers: new RegExp(`^${escapeRegex(cleanCode)}$`, 'i')
+      }).lean();
+      matchType = 'alternate_part_number';
+    }
+
+    if (matchedParts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        matched: false,
+        matchType: 'none',
+        query: cleanCode,
+        message: `No active spare part found matching identifier "${cleanCode}".`,
+        parts: []
+      });
+    }
+
+    const populatedParts = matchedParts.map((p) => {
+      const shop = shopMap.get(p.shopId.toString()) || null;
+      return {
+        ...p,
+        shop
+      };
+    });
+
+    const primaryPart = populatedParts[0];
+
+    return res.status(200).json({
+      success: true,
+      matched: true,
+      matchType,
+      query: cleanCode,
+      count: populatedParts.length,
+      parts: populatedParts,
+      data: {
+        ...primaryPart,
+        matchedBy: matchType,
+        parts: populatedParts
+      }
+    });
+  } catch (error) {
+    logger.error('Error in searchByIdentifier:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to search by identifier.'
+    });
+  }
+};
+
+/**
+ * Image-based Spare Part Identification & Search
+ * @route POST /api/search/image
+ */
+export const searchByImage = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: 'No image file uploaded. Please upload a valid image (JPEG, PNG, WebP).'
+    });
+  }
+
+  const uploadedPath = req.file.path;
+
+  try {
+    const analysis = await analyzeImageForPart({
+      filePath: uploadedPath,
+      mimeType: req.file.mimetype,
+      originalName: req.file.originalname
+    });
+
+    const activeShops = await Shop.find({ isApproved: true, isActive: true }).select('_id').lean();
+    const activeShopIds = activeShops.map((s) => s._id);
+
+    const orClauses = [];
+    if (analysis.probablePartName) {
+      orClauses.push({ partName: new RegExp(escapeRegex(analysis.probablePartName), 'i') });
+    }
+    if (analysis.suggestedCategory && analysis.suggestedCategory !== 'Other') {
+      orClauses.push({ category: new RegExp(escapeRegex(analysis.suggestedCategory), 'i') });
+    }
+    if (Array.isArray(analysis.keywords)) {
+      analysis.keywords.forEach((kw) => {
+        if (kw && kw.trim()) {
+          orClauses.push({ partName: new RegExp(escapeRegex(kw.trim()), 'i') });
+          orClauses.push({ category: new RegExp(escapeRegex(kw.trim()), 'i') });
+        }
+      });
+    }
+
+    if (orClauses.length === 0) {
+      orClauses.push({ partName: /.*/ });
+    }
+
+    const query = {
+      shopId: { $in: activeShopIds },
+      isPublished: true,
+      isArchived: false,
+      isModerated: false,
+      $or: orClauses
+    };
+
+    if (analysis.vehicleType) {
+      query.vehicleType = analysis.vehicleType;
+    }
+
+    const matchedParts = await SparePart.find(query)
+      .populate('shopId', 'name category address.city address.state contact.phone images')
+      .limit(12)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      isAiPowered: analysis.isAiPowered,
+      providerMode: analysis.providerMode,
+      analysis: {
+        probablePartName: analysis.probablePartName,
+        suggestedCategory: analysis.suggestedCategory,
+        vehicleType: analysis.vehicleType,
+        keywords: analysis.keywords
+      },
+      count: matchedParts.length,
+      parts: matchedParts,
+      data: {
+        parts: matchedParts,
+        analysis,
+        suggestedTerms: analysis.keywords || [],
+        count: matchedParts.length
+      }
+    });
+  } catch (error) {
+    logger.error('Error in searchByImage:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process image search.'
+    });
+  } finally {
+    if (uploadedPath && fs.existsSync(uploadedPath)) {
+      try {
+        fs.unlinkSync(uploadedPath);
+        logger.debug(`Deleted temp search image: ${uploadedPath}`);
+      } catch (cleanupErr) {
+        logger.warn(`Could not delete temp search image: ${cleanupErr.message}`);
+      }
+    }
   }
 };

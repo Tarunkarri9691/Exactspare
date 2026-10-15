@@ -139,12 +139,30 @@ EXACTSPARE connects three distinct platform roles with strict backend authorizat
 | `PATCH` | `/api/admin/reviews/:id/moderate` | `ADMIN` | Approve, flag, or hide reviews with automatic rating recalculation |
 | `GET` | `/api/admin/audit-logs` | `ADMIN` | Immutable, paginated security audit log with entity, action, and date filters |
 
+### Module 11: Advanced Search, Barcode/QR Scanning & Part Identification Endpoints
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/search/suggestions?q=:text` | `PUBLIC` | Auto-complete suggestions querying real parts, part numbers, barcodes, brands, and categories |
+| `GET` | `/api/search/identifier?code=:val` | `PUBLIC` | Resolves barcode, part number, manufacturer part number, or alternate part number against approved inventory |
+| `GET` | `/api/products/barcode/:barcode` | `PUBLIC` | Direct barcode lookup returning published spare-part details from approved shops |
+| `GET` | `/api/parts/barcode/:barcode` | `PUBLIC` | Alias for direct barcode lookup returning verified product listing |
+| `POST` | `/api/search/image` | `PUBLIC` | Visual part identification using image upload, safe cleanup, AI vision analysis, and MongoDB inventory match |
+| `GET` | `/api/search/nearby-parts` | `PUBLIC` | Multi-criteria search with barcode, condition, rating, subcategory, brand, vehicle compatibility, and geo radius |
+
 ---
 
 ## 5. Development & Execution (Windows PowerShell)
 
-### Run All Automated Test Suites (122 Total Scenarios Across Modules 2–8)
+### Run All Automated Test Suites (149 Total Scenarios Across Modules 2–11)
 ```powershell
+# Module 11: Advanced Search, Barcode/QR & Visual Identification Test Suite (15 Scenarios)
+cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
+npm run test:m11
+
+# Module 10: AI Assistant, Smart Recommendations & Part Comparison Test Suite (12 Scenarios)
+cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
+npm run test:m10
+
 # Module 8: Admin Analytics, Reports & Governance Test Suite (16 Scenarios)
 cd c:\Users\tarun\OneDrive\Desktop\exactspare\backend
 npm run test:m8

@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { searchNearbyParts, fetchSearchMetadata } from '../services/api';
+import { searchNearbyParts, fetchSearchMetadata, fetchSearchSuggestions } from '../services/api';
 import SearchResultCard from '../components/SearchResultCard';
 import SearchResultsMapView from '../components/SearchResultsMapView';
 import VehicleSelector from '../components/VehicleSelector';
 import LocationSelector from '../components/LocationSelector';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ImageSearchModal from '../components/ImageSearchModal';
 import './PublicPartsPage.css';
 
 const SORT_OPTIONS = [
+  { value: 'relevance', label: 'Most Relevant (Best Match)' },
+  { value: 'rating_desc', label: 'Highest Rated (★ 5 → 1)' },
   { value: 'distance', label: 'Nearest First (📍 By Distance)' },
   { value: 'price_asc', label: 'Lowest Price First (₹ Low → High)' },
   { value: 'price_desc', label: 'Highest Price First (₹ High → Low)' },
@@ -44,10 +48,25 @@ const PublicPartsPage = () => {
   const [year, setYear] = useState(searchParams.get('year') || '');
   const [engineDetails, setEngineDetails] = useState('');
   const [category, setCategory] = useState(searchParams.get('category') || 'ALL');
+  const [subcategory, setSubcategory] = useState(searchParams.get('subcategory') || '');
   const [manufacturer, setManufacturer] = useState(searchParams.get('manufacturer') || 'ALL');
+  const [condition, setCondition] = useState(searchParams.get('condition') || 'ALL');
+  const [minRating, setMinRating] = useState(searchParams.get('minRating') || 'ALL');
+  const [barcode, setBarcode] = useState(searchParams.get('barcode') || '');
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [inStockOnly, setInStockOnly] = useState(searchParams.get('inStock') === 'true');
+
+  // Scanner & Image Search Modal State
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [scannerMode, setScannerMode] = useState('all');
+  const [showImageSearchModal, setShowImageSearchModal] = useState(false);
+
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const searchInputWrapRef = useRef(null);
 
   // Location State
   const initialLat = searchParams.get('latitude') ? parseFloat(searchParams.get('latitude')) : null;
@@ -107,7 +126,11 @@ const PublicPartsPage = () => {
       if (model.trim()) params.model = model.trim();
       if (year.trim()) params.year = year.trim();
       if (category && category !== 'ALL') params.category = category;
+      if (subcategory.trim()) params.subcategory = subcategory.trim();
       if (manufacturer && manufacturer !== 'ALL') params.manufacturer = manufacturer;
+      if (condition && condition !== 'ALL') params.condition = condition;
+      if (minRating && minRating !== 'ALL') params.minRating = minRating;
+      if (barcode.trim()) params.barcode = barcode.trim();
       if (minPrice !== '' && !isNaN(minPrice)) params.minPrice = minPrice;
       if (maxPrice !== '' && !isNaN(maxPrice)) params.maxPrice = maxPrice;
       if (inStockOnly) params.inStock = true;
@@ -147,7 +170,11 @@ const PublicPartsPage = () => {
     model,
     year,
     category,
+    subcategory,
     manufacturer,
+    condition,
+    minRating,
+    barcode,
     minPrice,
     maxPrice,
     inStockOnly,
@@ -162,6 +189,44 @@ const PublicPartsPage = () => {
     executeSearch();
   }, [executeSearch]);
 
+  // Live autocomplete suggestions
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setSuggestionsLoading(true);
+        const res = await fetchSearchSuggestions(trimmed);
+        if (res.success && res.data) {
+          setSuggestions(res.data.suggestions || []);
+          setShowSuggestions(true);
+        }
+      } catch {
+        // ignore suggestions error
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (searchInputWrapRef.current && !searchInputWrapRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   // Sync state back to URL query parameters
   useEffect(() => {
     const p = new URLSearchParams();
@@ -172,6 +237,10 @@ const PublicPartsPage = () => {
     if (model.trim()) p.set('model', model.trim());
     if (year.trim()) p.set('year', year.trim());
     if (category !== 'ALL') p.set('category', category);
+    if (subcategory.trim()) p.set('subcategory', subcategory.trim());
+    if (condition !== 'ALL') p.set('condition', condition);
+    if (minRating !== 'ALL') p.set('minRating', minRating);
+    if (barcode.trim()) p.set('barcode', barcode.trim());
     if (minPrice !== '') p.set('minPrice', minPrice);
     if (maxPrice !== '') p.set('maxPrice', maxPrice);
     if (inStockOnly) p.set('inStock', 'true');
@@ -193,6 +262,10 @@ const PublicPartsPage = () => {
     model,
     year,
     category,
+    subcategory,
+    condition,
+    minRating,
+    barcode,
     minPrice,
     maxPrice,
     inStockOnly,
@@ -251,7 +324,11 @@ const PublicPartsPage = () => {
     setYear('');
     setEngineDetails('');
     setCategory('ALL');
+    setSubcategory('');
     setManufacturer('ALL');
+    setCondition('ALL');
+    setMinRating('ALL');
+    setBarcode('');
     setMinPrice('');
     setMaxPrice('');
     setInStockOnly(false);
@@ -272,7 +349,11 @@ const PublicPartsPage = () => {
     model.trim() ||
     year.trim() ||
     category !== 'ALL' ||
+    subcategory.trim() ||
     manufacturer !== 'ALL' ||
+    condition !== 'ALL' ||
+    minRating !== 'ALL' ||
+    barcode.trim() ||
     minPrice !== '' ||
     maxPrice !== '' ||
     inStockOnly ||
@@ -327,16 +408,19 @@ const PublicPartsPage = () => {
 
           {/* Quick Search Bar */}
           <form className="parts-search-bar-inline" onSubmit={handleQuerySubmit}>
-            <div className="search-input-wrap">
+            <div className="search-input-wrap" ref={searchInputWrapRef}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
               <input
                 type="text"
-                placeholder="Search part name, OEM code, brand, or category..."
+                placeholder="Search part name, OEM code, brand, barcode, or category..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowSuggestions(true);
+                }}
               />
               {query && (
                 <button
@@ -344,16 +428,64 @@ const PublicPartsPage = () => {
                   className="btn-clear-query"
                   onClick={() => {
                     setQuery('');
+                    setSuggestions([]);
+                    setShowSuggestions(false);
                     setCurrentPage(1);
                   }}
                 >
                   ✕
                 </button>
               )}
+
+              {/* Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="search-suggestions-dropdown fade-in">
+                  <div className="suggestions-header">
+                    <span>Database Suggestions</span>
+                    {suggestionsLoading && <span className="suggestions-loader">...</span>}
+                  </div>
+                  {suggestions.map((s, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="suggestion-item"
+                      onClick={() => {
+                        setQuery(s.text);
+                        setShowSuggestions(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <span className="suggestion-type-tag">{s.type}</span>
+                      <span className="suggestion-text">{s.text}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button type="submit" className="btn btn-primary btn-search-trigger">
               Search
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-outline btn-scan-trigger"
+              onClick={() => {
+                setScannerMode('all');
+                setShowScannerModal(true);
+              }}
+              title="Scan Barcode or QR Code with Camera"
+            >
+              <span>📷 Scan Code</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-outline btn-img-trigger"
+              onClick={() => setShowImageSearchModal(true)}
+              title="Search by Product Photograph"
+            >
+              <span>🖼️ Image Search</span>
             </button>
 
             <button
@@ -438,6 +570,34 @@ const PublicPartsPage = () => {
               <span className="filter-chip">
                 Category: {category}
                 <button onClick={() => setCategory('ALL')}>✕</button>
+              </span>
+            )}
+
+            {subcategory && (
+              <span className="filter-chip">
+                Subcategory: {subcategory}
+                <button onClick={() => setSubcategory('')}>✕</button>
+              </span>
+            )}
+
+            {condition !== 'ALL' && (
+              <span className="filter-chip">
+                Condition: {condition}
+                <button onClick={() => setCondition('ALL')}>✕</button>
+              </span>
+            )}
+
+            {minRating !== 'ALL' && (
+              <span className="filter-chip">
+                Rating: {minRating}+ ★
+                <button onClick={() => setMinRating('ALL')}>✕</button>
+              </span>
+            )}
+
+            {barcode && (
+              <span className="filter-chip">
+                Barcode: {barcode}
+                <button onClick={() => setBarcode('')}>✕</button>
               </span>
             )}
 
@@ -638,6 +798,71 @@ const PublicPartsPage = () => {
               </div>
             )}
 
+            {/* Condition Filter */}
+            <div className="filter-group">
+              <label className="filter-title">Condition</label>
+              <select
+                className="filter-select-input"
+                value={condition}
+                onChange={(e) => {
+                  setCondition(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">All Conditions</option>
+                <option value="NEW">Brand New</option>
+                <option value="USED">Refurbished / Used</option>
+              </select>
+            </div>
+
+            {/* Customer Rating Filter */}
+            <div className="filter-group">
+              <label className="filter-title">Customer Rating</label>
+              <select
+                className="filter-select-input"
+                value={minRating}
+                onChange={(e) => {
+                  setMinRating(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">All Ratings</option>
+                <option value="4">★ 4 Stars & Above</option>
+                <option value="3">★ 3 Stars & Above</option>
+                <option value="2">★ 2 Stars & Above</option>
+              </select>
+            </div>
+
+            {/* Subcategory Filter */}
+            <div className="filter-group">
+              <label className="filter-title">Subcategory</label>
+              <input
+                type="text"
+                className="filter-select-input"
+                placeholder="e.g. Brake Pads, Filter..."
+                value={subcategory}
+                onChange={(e) => {
+                  setSubcategory(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+
+            {/* Barcode Filter */}
+            <div className="filter-group">
+              <label className="filter-title">Exact Barcode / Code</label>
+              <input
+                type="text"
+                className="filter-select-input"
+                placeholder="e.g. 8901234567890"
+                value={barcode}
+                onChange={(e) => {
+                  setBarcode(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+
             {/* Reset Button */}
             {hasActiveFilters && (
               <button
@@ -750,6 +975,29 @@ const PublicPartsPage = () => {
             )}
           </main>
         </div>
+
+        {/* Barcode & QR Scanner Dialog */}
+        <BarcodeScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          initialMode={scannerMode}
+          onSelectPart={(part) => {
+            setShowScannerModal(false);
+            setQuery(part.partNumber || part.barcode || part.partName);
+            setCurrentPage(1);
+          }}
+        />
+
+        {/* Visual Image Search Dialog */}
+        <ImageSearchModal
+          isOpen={showImageSearchModal}
+          onClose={() => setShowImageSearchModal(false)}
+          onSelectPart={(part) => {
+            setShowImageSearchModal(false);
+            setQuery(part.partName);
+            setCurrentPage(1);
+          }}
+        />
       </div>
     </div>
   );

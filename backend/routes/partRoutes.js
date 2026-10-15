@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getPublicParts,
   getPartById,
+  getPartByBarcode,
   createPart,
   getMyInventory,
   updatePart,
@@ -9,6 +10,7 @@ import {
   uploadPartImagesAction,
   deletePartImageAction
 } from '../controllers/partController.js';
+import { searchNearbyParts } from '../controllers/searchController.js';
 import { authenticateUser, authorizeRoles, optionalAuthenticateUser } from '../middleware/authMiddleware.js';
 import { uploadPartImages } from '../utils/upload.js';
 
@@ -62,6 +64,9 @@ router.delete(
 
 // Public Parts Discovery Routes
 router.get('/', getPublicParts);
+router.get('/nearby', searchNearbyParts);
+router.get('/nearby-parts', searchNearbyParts);
+router.get('/barcode/:barcode', getPartByBarcode);
 router.get('/:id', optionalAuthenticateUser, getPartById);
 
 export default router;

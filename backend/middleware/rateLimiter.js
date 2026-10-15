@@ -49,6 +49,21 @@ export const aiLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for Image-based spare part search operations
+ */
+export const imageSearchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 image searches per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    statusCode: 429,
+    message: 'Image search rate limit reached. Please wait a few moments before uploading more images.'
+  }
+});
+
+/**
  * General API rate limiter for non-sensitive public endpoints
  * Protects server resources while allowing normal high-frequency browsing.
  */

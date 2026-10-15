@@ -51,6 +51,8 @@ const AddEditPartPage = () => {
     engineDetails: '',
     manufacturer: '',
     partNumber: '',
+    barcode: '',
+    manufacturerPartNumber: '',
     condition: 'NEW',
     price: '',
     stockQuantity: '1',
@@ -102,6 +104,8 @@ const AddEditPartPage = () => {
               engineDetails: p.engineDetails || '',
               manufacturer: p.manufacturer || '',
               partNumber: p.partNumber || '',
+              barcode: p.barcode || '',
+              manufacturerPartNumber: p.manufacturerPartNumber || '',
               condition: p.condition || 'NEW',
               price: String(p.price ?? ''),
               stockQuantity: String(p.stockQuantity ?? ''),
@@ -211,6 +215,8 @@ const AddEditPartPage = () => {
       data.append('vehicleType', formData.vehicleType);
       data.append('manufacturer', formData.manufacturer.trim());
       data.append('partNumber', formData.partNumber.trim());
+      data.append('barcode', formData.barcode ? formData.barcode.trim() : '');
+      data.append('manufacturerPartNumber', formData.manufacturerPartNumber ? formData.manufacturerPartNumber.trim() : '');
       data.append('condition', formData.condition);
       data.append('price', parseFloat(formData.price));
       data.append('stockQuantity', parseInt(formData.stockQuantity, 10));
@@ -432,6 +438,36 @@ const AddEditPartPage = () => {
                   required
                 />
                 {fieldErrors.manufacturer && <span className="field-error-msg">{fieldErrors.manufacturer}</span>}
+              </div>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label htmlFor="barcode">Barcode / UPC / EAN / Code 128 (Optional)</label>
+                <input
+                  id="barcode"
+                  name="barcode"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. 8901234567890"
+                  value={formData.barcode}
+                  onChange={handleInputChange}
+                />
+                <span className="field-hint">Enables instant barcode/QR camera scanning in search.</span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="manufacturerPartNumber">Manufacturer Part Number / MPN (Optional)</label>
+                <input
+                  id="manufacturerPartNumber"
+                  name="manufacturerPartNumber"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. MPN-88219 or OEM-ALT-102"
+                  value={formData.manufacturerPartNumber}
+                  onChange={handleInputChange}
+                />
+                <span className="field-hint">Original manufacturer part number if different from SKU.</span>
               </div>
             </div>
 

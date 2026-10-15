@@ -122,6 +122,13 @@
   border-top: 1px dashed var(--color-border);
 }
 
+.secondary-left-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .btn-toggle-advanced {
   background: none;
   border: none;
@@ -139,6 +146,27 @@
 .btn-toggle-advanced:hover {
   background: var(--color-bg);
   color: var(--color-orange-primary);
+}
+
+.btn-secondary-action {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-navy-primary);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary-action:hover {
+  border-color: var(--color-orange-primary);
+  color: var(--color-orange-primary);
+  background: rgba(255, 107, 0, 0.05);
 }
 
 .gps-active-badge {

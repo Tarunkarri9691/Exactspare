@@ -4,6 +4,7 @@ import {
   createProductReview
 } from '../controllers/reviewController.js';
 import { compareProductsHandler } from '../controllers/compareController.js';
+import { getPartByBarcode } from '../controllers/partController.js';
 import {
   authenticateUser,
   authorizeRoles,
@@ -11,6 +12,9 @@ import {
 } from '../middleware/authMiddleware.js';
 
 const router = express.Router({ mergeParams: true });
+
+// GET /api/products/barcode/:barcode (Module 11: Barcode lookup)
+router.get('/barcode/:barcode', getPartByBarcode);
 
 // POST /api/products/compare (Compare 2 to 4 products)
 router.post('/compare', compareProductsHandler);
