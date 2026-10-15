@@ -11,6 +11,9 @@ import shopRoutes from './routes/shopRoutes.js';
 import partRoutes from './routes/partRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import ownerOrderRoutes from './routes/ownerOrderRoutes.js';
 import notFoundHandler from './middleware/notFoundHandler.js';
 import errorHandler from './middleware/errorHandler.js';
 import validateOriginCSRF from './middleware/csrfMiddleware.js';
@@ -67,8 +70,8 @@ app.get('/', (req, res) => {
   res.status(200).json({
     name: 'EXACTSPARE API',
     tagline: 'Vehicle Spare Parts Finder',
-    version: '1.3.0',
-    module: 'Module 5 - Location-Based Spare-Part Search',
+    version: '1.4.0',
+    module: 'Module 6 - Cart, Checkout, Orders & Order Management',
     documentation: {
       health: '/api/health',
       databaseHealth: '/api/health/db',
@@ -78,6 +81,9 @@ app.get('/', (req, res) => {
       shops: '/api/shops',
       parts: '/api/parts',
       search: '/api/search/nearby-parts',
+      cart: '/api/cart',
+      orders: '/api/orders',
+      ownerOrders: '/api/owner/orders',
       notifications: '/api/notifications'
     }
   });
@@ -93,6 +99,9 @@ app.use('/api/admin/shop-applications', adminApplicationRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/parts', partRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/owner/orders', ownerOrderRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Centralized 404 Route Handler

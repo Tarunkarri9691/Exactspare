@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { fetchPartByIdApi } from '../services/api';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import './PartDetailsPage.css';
 
 const PartDetailsPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addItem } = useCart();
+  const { user } = useAuth();
+
   const [part, setPart] = useState(null);
   const [activePhoto, setActivePhoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedQty, setSelectedQty] = useState(1);
+  const [cartFeedback, setCartFeedback] = useState(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     const loadPart = async () => {
@@ -34,6 +43,32 @@ const PartDetailsPage = () => {
 
     loadPart();
   }, [id]);
+
+  const handleAddToCart = async (goToCheckout = false) => {
+    if (!user) {
+      navigate(`/login?redirect=/parts/${id}`);
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      setCartFeedback({ type: 'error', text: 'Please sign in with a Customer account to buy parts.' });
+      return;
+    }
+
+    setIsAdding(true);
+    setCartFeedback(null);
+    const res = await addItem(part._id, selectedQty);
+    setIsAdding(false);
+
+    if (res.success) {
+      if (goToCheckout) {
+        navigate('/checkout');
+      } else {
+        setCartFeedback({ type: 'success', text: `Added ${selectedQty} item(s) to your cart!` });
+      }
+    } else {
+      setCartFeedback({ type: 'error', text: res.error || 'Failed to add item to cart' });
+    }
+  };
 
   if (loading) {
     return (
@@ -161,6 +196,71 @@ const PartDetailsPage = () => {
                   </div>
                 )}
               </div>
+
+              {/* Cart Feedback Message */}
+              {cartFeedback && (
+                <div className={`cart-feedback-banner ${cartFeedback.type}`}>
+                  <span>{cartFeedback.text}</span>
+                  {cartFeedback.type === 'success' && (
+                    <Link to="/cart" className="view-cart-link">
+                      View Cart →
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* Add to Cart Actions */}
+              {!isOutOfStock && (
+                <div className="cart-purchase-actions">
+                  <div className="qty-selector-wrap">
+                    <label className="qty-label">Quantity:</label>
+                    <div className="qty-picker">
+                      <button
+                        type="button"
+                        className="picker-btn"
+                        onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}
+                        disabled={selectedQty <= 1}
+                      >
+                        -
+                      </button>
+                      <span className="picker-num">{selectedQty}</span>
+                      <button
+                        type="button"
+                        className="picker-btn"
+                        onClick={() => setSelectedQty((q) => Math.min(part.stockQuantity, q + 1))}
+                        disabled={selectedQty >= part.stockQuantity}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pdp-cart-buttons">
+                    <button
+                      type="button"
+                      className="btn btn-primary add-to-cart-btn"
+                      onClick={() => handleAddToCart(false)}
+                      disabled={isAdding}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="btn-icon">
+                        <circle cx="9" cy="21" r="1"></circle>
+                        <circle cx="20" cy="21" r="1"></circle>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                      </svg>
+                      {isAdding ? 'Adding...' : 'Add to Cart'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-navy buy-now-btn"
+                      onClick={() => handleAddToCart(true)}
+                      disabled={isAdding}
+                    >
+                      Buy Now
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Vehicle Compatibility Specs Table */}

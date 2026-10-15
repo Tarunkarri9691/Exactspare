@@ -1,9 +1,36 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import './SearchResultCard.css';
 
 const SearchResultCard = ({ part, userLocation }) => {
   if (!part) return null;
+
+  const { addItem } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const handleQuickAdd = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      navigate(`/login?redirect=/parts/${part._id}`);
+      return;
+    }
+    if (user.role !== 'CUSTOMER') {
+      alert('Only customer accounts can add items to cart.');
+      return;
+    }
+    setAdding(true);
+    const res = await addItem(part._id, 1);
+    setAdding(false);
+    if (res.success) {
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2500);
+    }
+  };
 
   const partThumb = Array.isArray(part.imagePaths) && part.imagePaths.length > 0
     ? part.imagePaths[0]
@@ -140,17 +167,41 @@ const SearchResultCard = ({ part, userLocation }) => {
             <Link to={`/parts/${part._id}`} className="btn btn-outline btn-details">
               View Details
             </Link>
+            {!isOutOfStock && (
+              <button
+                type="button"
+                className={`btn btn-quick-cart ${added ? 'btn-success' : 'btn-orange-subtle'}`}
+                onClick={handleQuickAdd}
+                disabled={adding}
+                title="Add 1 unit to shopping cart"
+              >
+                {adding ? (
+                  '...'
+                ) : added ? (
+                  '✔ In Cart'
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                    <span>+ Cart</span>
+                  </>
+                )}
+              </button>
+            )}
             <a
               href={directionsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-primary btn-directions"
+              className="btn btn-outline btn-directions"
               title="Open directions in external map"
             >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
               </svg>
-              <span>Directions</span>
+              <span>Map</span>
             </a>
           </div>
         </div>

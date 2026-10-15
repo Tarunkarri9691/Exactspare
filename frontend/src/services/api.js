@@ -702,5 +702,241 @@ export const geocodeAddress = async (query) => {
   }
 };
 
+/**
+ * ========================================================
+ * MODULE 6 — CART & ORDER API SERVICES
+ * ========================================================
+ */
+
+/**
+ * Fetch authenticated customer's shopping cart
+ */
+export const fetchCart = async () => {
+  try {
+    const response = await apiClient.get('/cart');
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to fetch cart'
+    };
+  }
+};
+
+/**
+ * Add an item to shopping cart
+ */
+export const addToCart = async (productId, quantity = 1) => {
+  try {
+    const response = await apiClient.post('/cart/items', { productId, quantity });
+    return {
+      success: true,
+      message: response.data?.message || 'Item added to cart',
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to add item to cart',
+      statusCode: error.response?.status
+    };
+  }
+};
+
+/**
+ * Update quantity of a cart item
+ */
+export const updateCartItemQty = async (productId, quantity) => {
+  try {
+    const response = await apiClient.patch(`/cart/items/${productId}`, { quantity });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to update quantity',
+      statusCode: error.response?.status
+    };
+  }
+};
+
+/**
+ * Remove an item from cart
+ */
+export const removeFromCart = async (productId) => {
+  try {
+    const response = await apiClient.delete(`/cart/items/${productId}`);
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to remove item'
+    };
+  }
+};
+
+/**
+ * Clear all items from cart
+ */
+export const clearCart = async () => {
+  try {
+    const response = await apiClient.delete('/cart');
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to clear cart'
+    };
+  }
+};
+
+/**
+ * Place a new order from cart
+ */
+export const placeOrder = async (orderPayload) => {
+  try {
+    const response = await apiClient.post('/orders', orderPayload);
+    return {
+      success: true,
+      message: response.data?.message || 'Order placed successfully',
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to place order',
+      errors: error.response?.data?.errors,
+      statusCode: error.response?.status
+    };
+  }
+};
+
+/**
+ * Fetch customer orders list
+ */
+export const fetchMyOrders = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/orders/my', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to retrieve orders'
+    };
+  }
+};
+
+/**
+ * Fetch customer order details by ID
+ */
+export const fetchOrderDetails = async (orderId) => {
+  try {
+    const response = await apiClient.get(`/orders/${orderId}`);
+    return {
+      success: true,
+      data: response.data?.data?.order
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to retrieve order details',
+      statusCode: error.response?.status
+    };
+  }
+};
+
+/**
+ * Customer cancel eligible order
+ */
+export const cancelCustomerOrder = async (orderId, reason = '') => {
+  try {
+    const response = await apiClient.post(`/orders/${orderId}/cancel`, { reason });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.order
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to cancel order',
+      statusCode: error.response?.status
+    };
+  }
+};
+
+/**
+ * Shop Owner: Fetch orders containing owner's shop items
+ */
+export const fetchOwnerOrders = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/owner/orders', { params });
+    return {
+      success: true,
+      data: response.data?.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to retrieve shop orders'
+    };
+  }
+};
+
+/**
+ * Shop Owner: Fetch detailed view of an order
+ */
+export const fetchOwnerOrderDetails = async (orderId) => {
+  try {
+    const response = await apiClient.get(`/owner/orders/${orderId}`);
+    return {
+      success: true,
+      data: response.data?.data?.order
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to retrieve order details'
+    };
+  }
+};
+
+/**
+ * Shop Owner: Update order fulfillment status
+ */
+export const updateOwnerOrderStatus = async (orderId, status, note = '') => {
+  try {
+    const response = await apiClient.patch(`/owner/orders/${orderId}/status`, { status, note });
+    return {
+      success: true,
+      message: response.data?.message,
+      data: response.data?.data?.order
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to update order status',
+      statusCode: error.response?.status
+    };
+  }
+};
+
 export default apiClient;
 

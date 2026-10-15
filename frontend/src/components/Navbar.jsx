@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
 
   const toggleMobileMenu = () => {
@@ -51,7 +53,7 @@ const Navbar = () => {
 
         {/* Module Badge */}
         <div className="module-badge-nav">
-          <span className="badge badge-orange">Module 5 • Location Search</span>
+          <span className="badge badge-orange">Module 6 • Cart & Orders</span>
         </div>
 
         {/* Desktop Navigation */}
@@ -78,10 +80,42 @@ const Navbar = () => {
             Find Shops
           </NavLink>
 
+          {/* Cart Link (for Customers / Guests) */}
+          {(!user || user.role === 'CUSTOMER') && (
+            <NavLink 
+              to="/cart" 
+              className={({ isActive }) => `nav-link nav-cart-btn ${isActive ? 'active' : ''}`}
+              title="Shopping Cart"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="nav-cart-icon">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span>Cart</span>
+              {cartCount > 0 && <span className="nav-cart-badge">{cartCount}</span>}
+            </NavLink>
+          )}
+
           {isAuthenticated ? (
             <>
+              {user?.role === 'CUSTOMER' && (
+                <NavLink 
+                  to="/orders" 
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                >
+                  My Orders
+                </NavLink>
+              )}
+
               {user?.role === 'OWNER' && (
                 <>
+                  <NavLink 
+                    to="/owner/orders" 
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  >
+                    Orders
+                  </NavLink>
                   <NavLink 
                     to="/owner/inventory" 
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -193,10 +227,37 @@ const Navbar = () => {
               Find Shops
             </NavLink>
 
+            {(!user || user.role === 'CUSTOMER') && (
+              <NavLink 
+                to="/cart" 
+                className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                onClick={closeMobileMenu}
+              >
+                Shopping Cart {cartCount > 0 ? `(${cartCount})` : ''}
+              </NavLink>
+            )}
+
             {isAuthenticated ? (
               <>
+                {user?.role === 'CUSTOMER' && (
+                  <NavLink 
+                    to="/orders" 
+                    className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                    onClick={closeMobileMenu}
+                  >
+                    My Orders
+                  </NavLink>
+                )}
+
                 {user?.role === 'OWNER' && (
                   <>
+                    <NavLink 
+                      to="/owner/orders" 
+                      className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                      onClick={closeMobileMenu}
+                    >
+                      Shop Orders
+                    </NavLink>
                     <NavLink 
                       to="/owner/inventory" 
                       className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 

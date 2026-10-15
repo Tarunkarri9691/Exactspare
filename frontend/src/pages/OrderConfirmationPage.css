@@ -1,0 +1,370 @@
+/* OrderConfirmationPage.css */
+.confirmation-page-container {
+  padding: var(--spacing-xl) 0 var(--spacing-3xl);
+  background-color: var(--color-bg-light);
+  min-height: calc(100vh - var(--nav-height) - 150px);
+}
+
+.confirmation-success-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 36px 24px;
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto var(--spacing-xl);
+}
+
+.success-icon-badge {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: #DCFCE7;
+  color: #16A34A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.2);
+}
+
+.success-icon-badge svg {
+  width: 38px;
+  height: 38px;
+}
+
+.confirmation-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-navy-primary);
+  margin-bottom: 8px;
+}
+
+.confirmation-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  max-width: 520px;
+  margin: 0 auto 20px;
+  line-height: 1.5;
+}
+
+.order-number-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+}
+
+.order-num-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.order-num-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-orange-primary);
+  letter-spacing: 0.05em;
+}
+
+/* Grid Layout */
+.confirmation-details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+}
+
+@media (min-width: 992px) {
+  .confirmation-details-grid {
+    grid-template-columns: 1fr 380px;
+    align-items: start;
+  }
+}
+
+.detail-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  padding: 24px;
+  margin-bottom: var(--spacing-lg);
+}
+
+.detail-card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-navy-primary);
+  border-bottom: 1px solid #F1F5F9;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+/* Items List */
+.confirm-items-table {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-bottom: 1px solid #F1F5F9;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.confirm-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.confirm-item-main {
+  flex: 1;
+}
+
+.confirm-item-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-navy-primary);
+  margin-bottom: 4px;
+}
+
+.confirm-item-subtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.confirm-tag {
+  background-color: #F1F5F9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.confirm-shop {
+  color: var(--color-text-muted);
+}
+
+.confirm-item-pricing {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.confirm-qty-calc {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.confirm-subtotal {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-navy-primary);
+}
+
+/* Totals Box */
+.confirm-totals-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.confirm-tot-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.free-tag {
+  color: #059669;
+  font-weight: 600;
+}
+
+.grand-total-row {
+  border-top: 1px dashed #CBD5E1;
+  padding-top: 12px;
+  margin-top: 6px;
+}
+
+.grand-total-row span:first-child {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-navy-primary);
+}
+
+.grand-total-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-orange-primary);
+}
+
+/* KV List */
+.info-kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.kv-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.kv-val {
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+/* Status Pills */
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-placed {
+  background-color: #E0F2FE;
+  color: #0369A1;
+}
+
+.status-confirmed {
+  background-color: #EDE9FE;
+  color: #6D28D9;
+}
+
+.status-processing {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.status-ready_for_dispatch {
+  background-color: #FCE7F3;
+  color: #9D174D;
+}
+
+.status-shipped {
+  background-color: #DCFCE7;
+  color: #15803D;
+}
+
+.status-delivered {
+  background-color: #D1FAE5;
+  color: #047857;
+}
+
+.status-cancelled {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+}
+
+.payment-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.payment-pending {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.payment-paid {
+  background-color: #DCFCE7;
+  color: #15803D;
+}
+
+.payment-refunded {
+  background-color: #F3F4F6;
+  color: #4B5563;
+}
+
+/* Delivery Box */
+.delivery-address-box {
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.address-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-navy-primary);
+  margin-bottom: 2px;
+}
+
+.address-phone {
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.address-instructions {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background-color: #F8FAFC;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+/* Actions */
+.confirmation-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.full-width-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+}
+
+/* Loading & Error */
+.confirmation-loading-card,
+.confirmation-error-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 60px 24px;
+  text-align: center;
+  max-width: 500px;
+  margin: 60px auto;
+  border: 1px solid var(--color-border);
+}
+
+.confirmation-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 101, 0, 0.2);
+  border-top-color: var(--color-orange-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.confirm-actions-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}

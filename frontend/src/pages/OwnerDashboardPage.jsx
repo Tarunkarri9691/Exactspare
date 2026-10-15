@@ -246,10 +246,13 @@ const OwnerDashboardPage = () => {
                   <span className="perk-chip">✓ Inventory Integration Enabled</span>
                 </div>
                 <div className="status-action-row" style={{ marginTop: '18px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <Link to="/owner/inventory" className="btn btn-primary">
-                    Manage Spare-Part Inventory →
+                  <Link to="/owner/orders" className="btn btn-primary">
+                    Customer Orders & Fulfillment →
                   </Link>
-                  <Link to="/owner/inventory/new" className="btn btn-outline-navy">
+                  <Link to="/owner/inventory" className="btn btn-outline-navy">
+                    Manage Inventory
+                  </Link>
+                  <Link to="/owner/inventory/new" className="btn btn-outline">
                     + Add New Spare Part
                   </Link>
                   <Link to="/owner/shop" className="btn btn-outline">

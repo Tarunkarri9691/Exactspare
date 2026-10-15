@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { fetchCustomerDashboardData } from '../services/api';
+import { fetchCustomerDashboardData, fetchMyOrders } from '../services/api';
 import './CustomerDashboardPage.css';
 
 const CATEGORIES = [
@@ -15,13 +15,20 @@ const CATEGORIES = [
 const CustomerDashboardPage = () => {
   const { user } = useAuth();
   const [backendData, setBackendData] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboard = async () => {
-      const res = await fetchCustomerDashboardData();
-      if (res.success) {
-        setBackendData(res.data);
+      const [dashRes, ordersRes] = await Promise.all([
+        fetchCustomerDashboardData(),
+        fetchMyOrders({ limit: 3 })
+      ]);
+      if (dashRes.success) {
+        setBackendData(dashRes.data);
+      }
+      if (ordersRes.success && ordersRes.data?.orders) {
+        setRecentOrders(ordersRes.data.orders);
       }
       setLoading(false);
     };
@@ -90,29 +97,88 @@ const CustomerDashboardPage = () => {
           </div>
         </div>
 
-        {/* Orders Placeholder Section */}
+        {/* Orders Section */}
         <div className="dashboard-section">
           <div className="section-title-row">
-            <h2>My Spare Part Orders & Reservations</h2>
-            <span className="badge badge-navy">Orders</span>
+            <h2>My Spare Part Orders</h2>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Link to="/cart" className="badge badge-orange" style={{ textDecoration: 'none' }}>
+                Shopping Cart
+              </Link>
+              <Link to="/orders" className="badge badge-navy" style={{ textDecoration: 'none' }}>
+                View All Orders →
+              </Link>
+            </div>
           </div>
 
-          <div className="orders-placeholder-card">
-            <div className="empty-orders-icon">
-              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
+          {recentOrders.length === 0 ? (
+            <div className="orders-placeholder-card">
+              <div className="empty-orders-icon">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+              </div>
+              <h3>No Active Orders Yet</h3>
+              <p>
+                Browse spare parts from verified local shops, add them to your cart, and place Cash on Delivery orders directly.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <Link to="/parts" className="btn btn-primary">
+                  Explore Spare Parts
+                </Link>
+                <Link to="/cart" className="btn btn-outline">
+                  View Shopping Cart
+                </Link>
+              </div>
             </div>
-            <h3>No Active Orders Yet</h3>
-            <p>
-              You haven't reserved or ordered any vehicle spare parts yet. In <strong>Module 6</strong>, customer order dispatch, store pickup reservation, and order status tracking will be live.
-            </p>
-            <Link to="/" className="btn btn-outline">
-              Explore Available Categories on Home Page
-            </Link>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {recentOrders.map((ord) => (
+                <div
+                  key={ord._id}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 800, color: 'var(--color-navy-primary)' }}>
+                        {ord.orderNumber}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          backgroundColor: ord.orderStatus === 'DELIVERED' ? '#DCFCE7' : '#E0F2FE',
+                          color: ord.orderStatus === 'DELIVERED' ? '#15803D' : '#0369A1'
+                        }}
+                      >
+                        {ord.orderStatus}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                      {ord.items?.length} items • ₹{ord.totalAmount?.toLocaleString('en-IN')} • {ord.paymentMethod}
+                    </div>
+                  </div>
+                  <Link to={`/orders/${ord._id}`} className="btn btn-outline btn-sm">
+                    Track Order →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 # EXACTSPARE — Vehicle Spare Parts Finder
 
-> **Module 5: Location-Based Spare-Part Search & Geospatial Discovery Engine**  
-> Complete enterprise-grade location-based vehicle spare parts discovery platform. Features geospatial radius search on MongoDB `2dsphere` indexes, great-circle distance calculation via the Haversine formula, interactive Leaflet/OpenStreetMap markers with custom automotive SVG pins, browser Geolocation API with graceful denial fallbacks, OpenStreetMap Nominatim city/pincode geocoding with in-memory caching, reusable VehicleSelector with verified compatibility badges, multi-criteria filtering, price and distance sorting, and turn-by-turn external directions integration.
+> **Module 6: Shopping Cart, Secure Checkout, Orders & Shop Owner Order Management**  
+> Complete enterprise-grade shopping cart and order lifecycle platform. Features persistent customer cart in MongoDB with real-time stock and price revalidation, robust checkout with delivery address validation, Cash on Delivery (COD) payment flow, atomic conditional inventory deduction with compensating rollback to guarantee 100% stock consistency without overselling, historical snapshot preservation of products and addresses, unified customer order tracking with visual status timeline, customer-initiated order cancellation with automatic stock restoration, and dedicated shop-owner order management dashboard enforcing strict multi-tenant data isolation and valid status transitions (`PLACED` → `CONFIRMED` → `PROCESSING` → `READY_FOR_DISPATCH` → `SHIPPED` → `DELIVERED`).
 
 ---
 
@@ -174,6 +174,28 @@ npm run build
 ---
 
 ## 6. Verification Results
+
+### Module 6: Cart, Checkout, Orders & Management Test Suite (18/18 Passed — 100%)
+```text
+✔ [PASS 1] Added product to cart with revalidated pricing and subtotal (2 × ₹1,500 = ₹3,000)
+✔ [PASS 2] Updated cart quantity to 3 and removed item successfully (Subtotal: ₹4,500)
+✔ [PASS 3] Cart successfully persists in MongoDB across sessions/refreshes
+✔ [PASS 4] Quantity exceeding available stock strictly rejected with HTTP 400
+✔ [PASS 5] Placed COD order successfully with server-generated unique ID (EXS-20261015-XXXXXX)
+✔ [PASS 6] Backend accurately calculated server-side total (₹7,500) from MongoDB product prices
+✔ [PASS 7] Stock atomically decreased exactly once: Part A (10 → 7), Part C (3 → 2)
+✔ [PASS 8] Order rejected with HTTP 400 when stock was insufficient at checkout time
+✔ [PASS 9] Order submission with empty cart rejected safely with HTTP 400
+✔ [PASS 10] Cross-customer order access blocked with HTTP 403 Forbidden (Ownership verified)
+✔ [PASS 11] Multi-tenant owner isolation verified: Owner 2 only sees their own shop's items in multi-shop order
+✔ [PASS 12] Owner successfully progressed fulfillment status from PLACED → CONFIRMED → PROCESSING
+✔ [PASS 13] Invalid status transition (e.g. PROCESSING → DELIVERED) strictly rejected with HTTP 400
+✔ [PASS 14] Customer cancellation accepted in PLACED status and stock restored exactly once (3 → 5)
+✔ [PASS 15] Cancellation rejected with HTTP 400 when order has reached or passed dispatch state
+✔ [PASS 16] Empty cart queries and DELETE /api/cart return clean zero totals without crashing
+✔ [PASS 17] Zero regressions: Module 2 Auth and Module 5 Search APIs continue running smoothly
+✔ [PASS 18] Customer orders endpoint returns safe payloads without exposing sensitive credentials
+```
 
 ### Module 5: Location-Based Search Test Suite (17/17 Passed — 100%)
 ```text
