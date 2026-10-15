@@ -1,7 +1,7 @@
 # EXACTSPARE — Vehicle Spare Parts Finder
 
-> **Module 8: Admin Analytics, Reports, Platform Governance & Audit Oversight**  
-> Complete enterprise-grade administrative intelligence and moderation suite. Features real-time MongoDB aggregations for platform metrics, financial sales reports with Gross Merchandise Value (GMV), confirmed collected revenue, and Average Order Value (AOV); interactive SVG revenue trend lines and order status distributions; shop management with activation/deactivation reason logging; user account governance protecting the last active administrator from accidental suspension; spare part catalog moderation; customer review moderation with instant star rating recalculations; and an immutable security audit log trail.
+> **Module 9: Production Deployment, Security Hardening, GitHub & Platform Reliability**  
+> Complete enterprise-grade MERN marketplace ecosystem spanning Modules 1–9. Features comprehensive backend security hardening (Helmet security headers, strict CORS origin allowlisting, brute-force & order placement rate limiters, 2MB body size protections, sanitized credential logging), production environment variable validation (`MONGODB_URI`, `JWT_SECRET`, `FRONTEND_URL`), Vite client production build with `VITE_API_BASE_URL` configuration, upload sandboxing preserving local file security, MongoDB Atlas readiness, comprehensive health endpoints (`/api/health`, `/api/health/db`), and complete production deployment guides for Render, Railway, Vercel, and DigitalOcean.
 
 ---
 
@@ -207,7 +207,110 @@ npm run build
 
 ---
 
-## 6. Verification Results
+## 6. Security Hardening & Production Architecture
+
+The EXACTSPARE platform implements layered, defense-in-depth protections designed for zero-trust production operation:
+
+### 1. HTTP Security Headers (Helmet)
+- **Content Security & Sniffing Protection**: Powered by `helmet()`, protecting against MIME-type confusion, clickjacking (`X-Frame-Options`), and cross-site scripting.
+- **Cross-Origin Resource Policy (CORP)**: Explicitly configured with `crossOriginResourcePolicy: { policy: 'cross-origin' }` to allow external frontends and mobile clients to load public storefront and spare-part images from the backend without browser blocking.
+
+### 2. Strict CORS Allowlisting
+- **Origin Whitelisting**: Restricts API access exclusively to the configured `FRONTEND_URL` (or `CLIENT_URL`) origin and local development hosts.
+- **Credentialed Cookies**: Configured with `credentials: true` and strict method allowlisting (`GET, POST, PUT, DELETE, PATCH, OPTIONS`).
+
+### 3. Tiered Rate Limiting (`express-rate-limit`)
+- **Authentication Limiter (`authLimiter`)**: Strictly caps login and registration attempts to 30 requests per 15 minutes per IP address to thwart brute-force password guessing and automated registration attacks.
+- **Order Placement Limiter (`orderLimiter`)**: Limits order creation to 35 requests per 15 minutes per IP to prevent cart flooding, rapid fake orders, and stock exhaustion attacks.
+- **General API Limiter (`apiLimiter`)**: Caps overall public API traffic at 600 requests per 15 minutes per IP to guard server resources against scraping and DDoS.
+
+### 4. Production Environment Validation (`config/env.js`)
+- **Fail-Fast Boot**: When `NODE_ENV === 'production'`, the server verifies critical variables (`MONGODB_URI`, `JWT_SECRET`, `FRONTEND_URL`) before binding to the port. If any variable is missing or if `JWT_SECRET` matches development fallback defaults, the process terminates immediately with an explicit diagnostic message.
+
+### 5. Secure Session Cookies (`utils/jwt.js`)
+- **HttpOnly Enforcement**: Cookie tokens are completely inaccessible to client-side JavaScript, neutralizing token theft via XSS.
+- **Production Flags**: In production (`NODE_ENV === 'production'`), `secure: true` (HTTPS only) and `sameSite: 'none'` (cross-site secure cookie passing) are applied automatically. Optional `COOKIE_DOMAIN` support allows cross-subdomain sharing.
+
+### 6. File Upload Sandboxing (`utils/upload.js`)
+- **Randomized Naming**: All uploaded files are assigned cryptographic random hex suffixes (`prefix-timestamp-hex.ext`), preventing original filename collision and script execution attacks.
+- **MIME & Extension Whitelist**: Only authenticated image types (`.jpg, .jpeg, .png, .webp`) and verification document types (`.pdf, .jpg, .jpeg, .png`) are accepted. Executables, scripts, and HTML files are rejected.
+- **Directory Traversal Guard**: Document downloads verify that requested file paths strictly reside within the base upload directory. Private business documents (`uploads/documents/`) are **never** exposed statically and require authenticated owner or administrator clearance via `GET /api/shop-applications/:id/documents/:filename`.
+
+### 7. Production Log Sanitization (`utils/logger.js`)
+- **Credential Redaction**: Recursive log sanitizer inspects every logged object and automatically masks passwords, token hashes, JWT strings, bearer headers, and cookies with `[REDACTED]`.
+
+---
+
+## 7. Production Deployment Guide
+
+### A. Managed MongoDB Atlas Setup
+1. **Create an Atlas Cluster**: Sign in to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and deploy a free M0 sandbox or dedicated cluster.
+2. **Database User**: Create a dedicated database user (e.g. `exactspare_app`) with `readWriteAnyDatabase` or scoped read/write permissions on the `exactspare` database.
+3. **Network Access**: Add your backend server's static IP to the Atlas IP Access List, or use `0.0.0.0/0` (with strong password protection) for dynamic container hosts like Render/Railway.
+4. **Connection String**: Copy the SRV URI:
+   ```text
+   mongodb+srv://<username>:<password>@cluster0.mongodb.net/exactspare?retryWrites=true&w=majority
+   ```
+
+### B. Backend Hosting (Render / Railway / DigitalOcean / Docker)
+1. **Build & Start Commands**:
+   - **Build Command:** `npm install`
+   - **Start Command:** `node server.js`
+2. **Environment Variables**:
+   | Variable | Example Value | Description |
+   | :--- | :--- | :--- |
+   | `NODE_ENV` | `production` | Enables production mode and strict security |
+   | `PORT` | `5000` (or assigned by host) | Port for the HTTP server |
+   | `MONGODB_URI` | `mongodb+srv://...` | MongoDB Atlas production connection string |
+   | `JWT_SECRET` | *(64-char random string)* | Strong cryptographic key for session signing |
+   | `FRONTEND_URL` | `https://exactspare.vercel.app` | URL of the deployed React client |
+   | `COOKIE_DOMAIN` | *(optional)* | Shared domain for cross-subdomain cookies |
+3. **Persistent Local Uploads Consideration**:
+   > [!IMPORTANT]
+   > The existing application uses local disk storage (`backend/uploads/`). Free container platforms (e.g. standard Render free tier) utilize ephemeral filesystems that reset on redeployment. For persistent production local storage, attach a **Persistent Disk Volume** mounted at `/app/backend/uploads` (supported natively on Render Disks, Railway Volumes, and DigitalOcean Droplets). For multi-instance horizontal scaling, the disk storage abstraction can be mapped to S3/MinIO compatible object stores without modifying frontend API contracts.
+
+### C. Frontend Hosting (Vercel / Netlify / Cloudflare Pages)
+1. **Root Directory**: `frontend`
+2. **Build Settings**:
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+3. **Environment Variables**:
+   | Variable | Example Value | Description |
+   | :--- | :--- | :--- |
+   | `VITE_API_BASE_URL` | `https://exactspare-api.onrender.com/api` | Full URL to the backend `/api` endpoint |
+4. **SPA Rewrite Rule (Single Page App routing)**:
+   - For **Vercel** (`vercel.json`):
+     ```json
+     {
+       "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+     }
+     ```
+   - For **Netlify** (`_redirects` in `frontend/public/`):
+     ```text
+     /*    /index.html   200
+     ```
+
+### D. Post-Deployment Verification Checklist
+- [ ] `GET /api/health` returns `{ "status": "ok", "database": { "connected": true } }`.
+- [ ] User registration and login successfully issue HttpOnly session cookies over HTTPS.
+- [ ] Shop application submission uploads images and private documents securely.
+- [ ] Map and location search (`/api/search/nearby-parts`) correctly geocodes and calculates distance.
+- [ ] Shopping cart persists items, checkout places orders, and stock atomically updates.
+- [ ] Admin dashboard overview renders live MongoDB aggregates and financial reports.
+- [ ] Ordinary users receive HTTP 403 Forbidden when attempting to access `/api/admin/*` endpoints.
+
+---
+
+## 8. GitHub Best Practices & Credential Safeguards
+
+### Git Repository Cleanliness
+- **`.env` and secrets**: The project `.gitignore` explicitly excludes all `.env`, `.env.*`, SSL private keys (`*.key`, `*.pem`), and logs from being committed.
+- **Upload Exclusions**: Actual uploaded customer files (`backend/uploads/*/*`) are excluded from Git, while `.gitkeep` files ensure directory structure exists upon cloning.
+- **Credential Rotation Notice**: If a secret or database password was ever committed to any Git repository or publicly exposed in the past, simply deleting the file from subsequent commits does **not** erase it from Git commit history. Always immediately rotate the compromised credential (e.g. Atlas database password, JWT signing secret, API key) in the corresponding provider console.
+
+---
+
+## 9. Verification Results & Health Checks
 
 ### Module 8: Admin Analytics, Reports & Governance Test Suite (16/16 Passed — 100%)
 ```text

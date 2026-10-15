@@ -3,15 +3,24 @@ import dotenv from 'dotenv';
 // Load environment variables before any other imports that might read them
 dotenv.config();
 
+import { validateEnvironment, config } from './config/env.js';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { logger } from './utils/logger.js';
 
-const PORT = process.env.PORT || 5000;
+const PORT = config.port;
 
 // Initialize server and database connection
 const startServer = async () => {
-  logger.info(`Starting EXACTSPARE Backend in ${process.env.NODE_ENV || 'development'} mode...`);
+  // Validate production environment requirements
+  try {
+    validateEnvironment();
+  } catch (err) {
+    logger.error('Environment validation failed:', err.message);
+    process.exit(1);
+  }
+
+  logger.info(`Starting EXACTSPARE Backend in ${config.nodeEnv} mode...`);
 
   // Attempt database connection without halting server on failure
   await connectDB();

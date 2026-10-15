@@ -27,14 +27,14 @@ export const getDatabaseStatus = () => {
 };
 
 /**
- * Connect to MongoDB instance using MONGODB_URI environment variable.
+ * Connect to MongoDB instance using MONGODB_URI or MONGO_URI environment variable.
  * Gracefully handles missing URI or connection failures without crashing the application.
  */
 export const connectDB = async () => {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!uri || uri.trim() === '') {
-    logger.warn('MONGODB_URI is not defined in environment variables. Database connection skipped.');
+    logger.warn('MONGODB_URI (or MONGO_URI) is not defined in environment variables. Database connection skipped.');
     return false;
   }
 
@@ -54,7 +54,9 @@ export const connectDB = async () => {
   try {
     logger.info('Attempting to connect to MongoDB...');
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000 // 5 seconds timeout for quick feedback
+      serverSelectionTimeoutMS: 5000, // 5 seconds timeout for quick feedback
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      socketTimeoutMS: 45000 // Close sockets after 45 seconds of inactivity
     });
     return true;
   } catch (error) {

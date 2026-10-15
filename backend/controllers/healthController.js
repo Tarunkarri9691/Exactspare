@@ -6,15 +6,25 @@ import { getDatabaseStatus } from '../config/db.js';
  */
 export const getHealth = (req, res) => {
   const uptimeSeconds = Math.floor(process.uptime());
+  const dbStatus = getDatabaseStatus();
+  const memUsage = process.memoryUsage();
   
   res.status(200).json({
-    status: 'ok',
+    status: dbStatus.isConnected ? 'ok' : 'degraded',
     service: 'EXACTSPARE Backend API',
-    module: 'Module 1 - Project Foundation',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     uptime: `${uptimeSeconds}s`,
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    database: {
+      status: dbStatus.state,
+      connected: dbStatus.isConnected
+    },
+    system: {
+      nodeVersion: process.version,
+      rssMemoryMb: Math.round(memUsage.rss / 1024 / 1024),
+      heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024)
+    }
   });
 };
 

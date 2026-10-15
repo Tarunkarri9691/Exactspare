@@ -18,13 +18,21 @@ import wishlistRoutes from './routes/wishlistRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import productReviewRoutes from './routes/productReviewRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import helmet from 'helmet';
 import notFoundHandler from './middleware/notFoundHandler.js';
 import errorHandler from './middleware/errorHandler.js';
 import validateOriginCSRF from './middleware/csrfMiddleware.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 import { SHOPS_DIR, PARTS_DIR } from './utils/upload.js';
 import { logger } from './utils/logger.js';
 
 const app = express();
+
+// Security Headers: Helmet protection with cross-origin asset policy for uploaded images
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false // API backend; CSP handled at frontend/gateway level
+}));
 
 // Request logging in development
 if (process.env.NODE_ENV === 'development') {
@@ -35,7 +43,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // CORS Configuration (Strict credentials support with dynamic origin validation)
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigin = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 const localDevOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -45,7 +53,7 @@ const localDevOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, Postman) or matching origin
+    // Allow requests with no origin (e.g. mobile apps, curl, Postman, test scripts) or matching origin
     if (!origin || origin === allowedOrigin || localDevOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -56,14 +64,18 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
-// Body Parsing Middleware
-app.use(express.json());
+// Body Parsing Middleware with size limits protecting against large payload DoS
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Cookie Parsing Middleware
 app.use(cookieParser());
 
 // CSRF Origin Protection Middleware
 app.use(validateOriginCSRF);
+
+// Global General API Rate Limiting for public endpoints
+app.use('/api', apiLimiter);
 
 // Serve Public Shop and Spare Part Photographs (Private verification documents are NOT served statically)
 app.use('/uploads/shops', express.static(SHOPS_DIR));
