@@ -5,7 +5,8 @@ import {
   fetchMyApprovedShop,
   fetchPartByIdApi,
   createPartApi,
-  updatePartApi
+  updatePartApi,
+  autoFillPartFromImageApi
 } from '../services/api';
 import './AddEditPartPage.css';
 
@@ -48,6 +49,7 @@ const AddEditPartPage = () => {
     compatibleMakes: '',
     compatibleModels: '',
     compatibleYears: '',
+    compatibleVariant: '',
     engineDetails: '',
     manufacturer: '',
     partNumber: '',
@@ -56,6 +58,7 @@ const AddEditPartPage = () => {
     condition: 'NEW',
     price: '',
     stockQuantity: '1',
+    notes: '',
     isPublished: true
   });
 
@@ -69,6 +72,10 @@ const AddEditPartPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [successNotice, setSuccessNotice] = useState('');
+
+  // Auto-fill from Part Photo state
+  const [scanningImage, setScanningImage] = useState(false);
+  const [aiExtractedNotice, setAiExtractedNotice] = useState(null);
 
   useEffect(() => {
     const initPage = async () => {
@@ -101,6 +108,7 @@ const AddEditPartPage = () => {
               compatibleMakes: Array.isArray(p.compatibleMakes) ? p.compatibleMakes.join(', ') : '',
               compatibleModels: Array.isArray(p.compatibleModels) ? p.compatibleModels.join(', ') : '',
               compatibleYears: Array.isArray(p.compatibleYears) ? p.compatibleYears.join(', ') : '',
+              compatibleVariant: p.compatibleVariant || '',
               engineDetails: p.engineDetails || '',
               manufacturer: p.manufacturer || '',
               partNumber: p.partNumber || '',
@@ -109,6 +117,7 @@ const AddEditPartPage = () => {
               condition: p.condition || 'NEW',
               price: String(p.price ?? ''),
               stockQuantity: String(p.stockQuantity ?? ''),
+              notes: p.notes || '',
               isPublished: p.isPublished ?? true
             });
             setExistingImages(p.imagePaths || []);
@@ -172,6 +181,87 @@ const AddEditPartPage = () => {
     setExistingImages((prev) => prev.filter((img) => img !== imgPath));
   };
 
+  const handleAutoFillUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setScanningImage(true);
+      setErrorMessage('');
+      setAiExtractedNotice(null);
+
+      const res = await autoFillPartFromImageApi(file);
+      if (res.success && res.data) {
+        const d = res.data;
+
+        // If AI is not configured or could not identify confidently
+        if (d.recognized === false || d.isAiConfigured === false) {
+          setErrorMessage(
+            d.message || (d.isAiConfigured === false
+              ? 'AI image recognition is currently not configured on this server. Please fill in the spare part details manually below.'
+              : 'Could not identify confidently from this photo. Please enter the spare part information manually.')
+          );
+          // If image was uploaded, still attach it to existing product photos for convenience
+          if (d.uploadedImage?.path) {
+            setExistingImages((prev) => {
+              if (!prev.includes(d.uploadedImage.path)) {
+                return [d.uploadedImage.path, ...prev].slice(0, 5);
+              }
+              return prev;
+            });
+          }
+          return;
+        }
+
+        // Genuine AI recognition suggestions (NO price prediction)
+        setFormData((prev) => ({
+          ...prev,
+          partName: d.partName || prev.partName,
+          category: CATEGORIES.includes(d.category) ? d.category : prev.category,
+          subcategory: d.subcategory || prev.subcategory,
+          manufacturer: d.manufacturer || prev.manufacturer,
+          partNumber: d.partNumber || prev.partNumber,
+          vehicleType: VEHICLE_TYPES.includes(d.vehicleType) ? d.vehicleType : prev.vehicleType,
+          compatibleMakes: d.compatibleMakes || prev.compatibleMakes,
+          compatibleModels: d.compatibleModels || prev.compatibleModels,
+          compatibleYears: d.compatibleYears || prev.compatibleYears,
+          compatibleVariant: d.compatibleVariant || prev.compatibleVariant,
+          condition: d.condition || prev.condition,
+          description: d.description || prev.description,
+          barcode: d.barcode || prev.barcode
+          // CRITICAL: Price is NEVER predicted by AI. The shop owner manually sets and controls all prices.
+        }));
+
+        // Attach scanned image directly to product photographs
+        if (d.uploadedImage?.path) {
+          setExistingImages((prev) => {
+            if (!prev.includes(d.uploadedImage.path)) {
+              return [d.uploadedImage.path, ...prev].slice(0, 5);
+            }
+            return prev;
+          });
+        }
+
+        setAiExtractedNotice({
+          title: 'Image Analysis Suggestions Generated',
+          partName: d.partName || 'Unspecified Part',
+          brand: d.manufacturer || 'OEM',
+          category: d.category || 'General',
+          partNumber: d.partNumber || 'N/A',
+          desc: `Suggested: "${d.partName || 'Part'}" (${d.manufacturer || 'OEM'}) | Category: ${d.category || 'General'} | SKU: ${d.partNumber || 'Pending manual verification'}. Review and confirm all details below. Please manually set your selling price (₹ INR) and available stock.`
+        });
+      } else {
+        setErrorMessage(res.error || 'Could not identify confidently. Please enter the information manually.');
+      }
+    } catch {
+      setErrorMessage('Failed to connect to image scanning service. Please enter details manually.');
+    } finally {
+      setScanningImage(false);
+      e.target.value = '';
+    }
+  };
+
+
   const validateForm = () => {
     const errs = {};
     if (!formData.partName.trim()) errs.partName = 'Part name is required.';
@@ -220,7 +310,9 @@ const AddEditPartPage = () => {
       data.append('condition', formData.condition);
       data.append('price', parseFloat(formData.price));
       data.append('stockQuantity', parseInt(formData.stockQuantity, 10));
+      data.append('compatibleVariant', formData.compatibleVariant ? formData.compatibleVariant.trim() : '');
       data.append('engineDetails', formData.engineDetails.trim());
+      data.append('notes', formData.notes ? formData.notes.trim() : '');
       data.append('isPublished', publishChoice);
 
       // Parse arrays
@@ -311,8 +403,8 @@ const AddEditPartPage = () => {
               <Link to="/owner/dashboard" className="btn btn-primary">
                 Return to Owner Dashboard
               </Link>
-              <Link to="/owner/application" className="btn btn-outline">
-                View Application Status
+              <Link to="/owner/shop" className="btn btn-outline">
+                Manage Shop Profile
               </Link>
             </div>
           </div>
@@ -353,13 +445,80 @@ const AddEditPartPage = () => {
           </div>
         )}
 
+        {/* AI Smart Auto-Fill from Part Photo Banner */}
+        <div className="part-auto-fill-card fade-in">
+          <div className="auto-fill-banner-content">
+            <div className="auto-fill-badge-row">
+              <span className="badge badge-orange">⚡ SMART AUTO-FILL SCANNER</span>
+              <span className="badge badge-navy">AI VISION & OCR</span>
+            </div>
+            <h3 className="auto-fill-heading">Upload Part Photo to Auto-Fill Details</h3>
+            <p className="auto-fill-subtext">
+              Upload or take a photo of the spare part, retail box, or specification label. Part Name, Category, Brand, SKU, and Vehicle Compatibility suggestions are detected and populated below. The shop owner must manually set and control all selling prices (₹ INR) and stock quantities.
+            </p>
+
+            <div className="auto-fill-actions-row">
+              <label className={`btn btn-primary auto-fill-scan-btn ${scanningImage ? 'scanning' : ''}`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="file-input-hidden"
+                  onChange={handleAutoFillUpload}
+                  disabled={scanningImage || submitting}
+                />
+                {scanningImage ? (
+                  <>
+                    <span className="scan-spin-loader"></span>
+                    <span>Analyzing Photo with AI Vision...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    <span>📸 Upload or Take Photo to Auto-Fill Details</span>
+                  </>
+                )}
+              </label>
+            </div>
+
+            {aiExtractedNotice && (
+              <div className="auto-fill-success-banner fade-in">
+                <div className="success-badge-icon">✓</div>
+                <div className="success-badge-details">
+                  <div className="success-badge-headline">
+                    <strong>{aiExtractedNotice.title}</strong>
+                    <span className="badge badge-green">Editable Below</span>
+                  </div>
+                  <p>{aiExtractedNotice.desc}</p>
+                </div>
+                <button
+                  type="button"
+                  className="dismiss-notice-btn"
+                  onClick={() => setAiExtractedNotice(null)}
+                  title="Dismiss notice"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
         <form className="part-multisection-form" onSubmit={(e) => e.preventDefault()}>
           {/* SECTION A: BASIC INFORMATION */}
-          <section className="form-card-section">
+          <section className={`form-card-section ${aiExtractedNotice ? 'highlight-autofill' : ''}`}>
             <div className="section-head">
               <span className="section-number">A</span>
               <div>
-                <h3>Basic Part Information</h3>
+                <div className="section-heading-row">
+                  <h3>Basic Part Information</h3>
+                  {aiExtractedNotice && (
+                    <span className="badge badge-green">✓ Auto-filled (Modify anytime)</span>
+                  )}
+                </div>
                 <p>Essential naming and catalog identification for customers and technicians.</p>
               </div>
             </div>
@@ -555,10 +714,24 @@ const AddEditPartPage = () => {
                   onChange={handleInputChange}
                 />
               </div>
+
+              <div className="form-group">
+                <label htmlFor="compatibleVariant">Compatible Variant / Trim (Optional)</label>
+                <input
+                  id="compatibleVariant"
+                  name="compatibleVariant"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. VXi, ZXi, ZX, Sport, Titanium, Standard"
+                  value={formData.compatibleVariant}
+                  onChange={handleInputChange}
+                />
+                <span className="field-hint">Specify vehicle variant or trim level where applicable.</span>
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="engineDetails">Engine & Trim Details (Optional)</label>
+              <label htmlFor="engineDetails">Engine & Power Specifications (Optional)</label>
               <input
                 id="engineDetails"
                 name="engineDetails"
@@ -634,6 +807,20 @@ const AddEditPartPage = () => {
                 </select>
               </div>
             </div>
+
+            <div className="form-group" style={{ marginTop: '16px' }}>
+              <label htmlFor="notes">Optional Dealer / Warehouse Notes</label>
+              <textarea
+                id="notes"
+                name="notes"
+                rows="2"
+                className="form-input form-textarea"
+                placeholder="e.g. Bin location: Aisle 4-B, OEM warranty valid till 2026, inspected on arrival..."
+                value={formData.notes}
+                onChange={handleInputChange}
+              />
+              <span className="field-hint">Internal stock, shelf location, or dealer warranty notes.</span>
+            </div>
           </section>
 
           {/* SECTION D: PRODUCT IMAGES */}
@@ -674,7 +861,7 @@ const AddEditPartPage = () => {
                 id="partImagesInput"
                 type="file"
                 multiple
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/*"
                 className="file-input-hidden"
                 onChange={handleFileSelection}
                 disabled={existingImages.length + selectedFiles.length >= 5}

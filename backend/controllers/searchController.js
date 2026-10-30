@@ -5,6 +5,7 @@ import { calculateDistanceKm, DISTANCE_DISCLAIMER } from '../utils/distance.js';
 import { logger } from '../utils/logger.js';
 import { analyzeImageForPart } from '../services/aiProvider.js';
 import https from 'https';
+import http from 'http';
 import fs from 'fs';
 
 /**
@@ -53,6 +54,53 @@ const queryNominatim = (searchQuery) => {
     req.on('timeout', () => {
       req.destroy();
       reject(new Error('Geocoding request timed out'));
+    });
+  });
+};
+
+/**
+ * In-memory LRU cache for OSRM driving route requests
+ */
+const routeCache = new Map();
+const MAX_ROUTE_CACHE_SIZE = 200;
+
+/**
+ * Query OSRM routing service for real driving route geometry, distance, and duration
+ */
+const queryOsrmRoute = (originLat, originLng, destLat, destLng) => {
+  return new Promise((resolve, reject) => {
+    // OSRM coordinates format: {lon1},{lat1};{lon2},{lat2}
+    const osrmBase = process.env.OSRM_ROUTER_URL || 'https://router.project-osrm.org';
+    const url = `${osrmBase}/route/v1/driving/${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson&steps=true`;
+
+    const parsedUrl = new URL(url);
+    const client = parsedUrl.protocol === 'https:' ? https : http;
+
+    const options = {
+      headers: {
+        'User-Agent': 'EXACTSPARE-Vehicle-Parts-Finder/1.0 (contact: support@exactspare.com)',
+        'Accept': 'application/json'
+      },
+      timeout: 8000
+    };
+
+    const req = client.get(url, options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+
+    req.on('error', (err) => reject(err));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Routing service request timed out'));
     });
   });
 };
@@ -697,6 +745,100 @@ export const geocodeAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Internal server error while resolving location.'
+    });
+  }
+};
+
+/**
+ * Real Road Driving Route Calculator
+ * @route GET /api/search/route
+ */
+export const getDirectionsRoute = async (req, res) => {
+  try {
+    const { originLat, originLng, destLat, destLng } = req.query;
+
+    const oLat = parseFloat(originLat);
+    const oLng = parseFloat(originLng);
+    const dLat = parseFloat(destLat);
+    const dLng = parseFloat(destLng);
+
+    // Strict coordinate validation
+    if (
+      isNaN(oLat) || isNaN(oLng) || isNaN(dLat) || isNaN(dLng) ||
+      oLat < -90 || oLat > 90 || dLat < -90 || dLat > 90 ||
+      oLng < -180 || oLng > 180 || dLng < -180 || dLng > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid origin and destination coordinates (originLat, originLng, destLat, destLng) are required.'
+      });
+    }
+
+    const cacheKey = `${oLat.toFixed(4)},${oLng.toFixed(4)}-${dLat.toFixed(4)},${dLng.toFixed(4)}`;
+    if (routeCache.has(cacheKey)) {
+      return res.status(200).json({
+        success: true,
+        cached: true,
+        data: routeCache.get(cacheKey)
+      });
+    }
+
+    let osrmResponse;
+    try {
+      osrmResponse = await queryOsrmRoute(oLat, oLng, dLat, dLng);
+    } catch (osrmErr) {
+      logger.warn('OSRM routing service error or timeout:', osrmErr.message);
+      return res.status(502).json({
+        success: false,
+        message: 'Routing service is temporarily unreachable. Please check connection and retry.'
+      });
+    }
+
+    if (!osrmResponse || osrmResponse.code !== 'Ok' || !Array.isArray(osrmResponse.routes) || osrmResponse.routes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No road route could be calculated between these coordinates. The destinations may be separated by water or off-road terrain.'
+      });
+    }
+
+    const primaryRoute = osrmResponse.routes[0];
+    const distanceMeters = primaryRoute.distance;
+    const durationSeconds = primaryRoute.duration;
+    const distanceKm = Math.round((distanceMeters / 1000) * 10) / 10;
+    const durationMinutes = Math.round(durationSeconds / 60);
+
+    const routeData = {
+      provider: 'OSRM (Open Source Routing Machine)',
+      distanceKm,
+      distanceMeters: Math.round(distanceMeters),
+      durationMinutes,
+      durationSeconds: Math.round(durationSeconds),
+      geometry: primaryRoute.geometry, // GeoJSON LineString: { type: 'LineString', coordinates: [[lng, lat], ...] }
+      waypoints: osrmResponse.waypoints || [],
+      steps: primaryRoute.legs?.[0]?.steps?.map(step => ({
+        name: step.name || 'Road',
+        distanceMeters: Math.round(step.distance),
+        durationSeconds: Math.round(step.duration),
+        instruction: step.maneuver?.type || 'turn',
+        modifier: step.maneuver?.modifier
+      })) || []
+    };
+
+    if (routeCache.size >= MAX_ROUTE_CACHE_SIZE) {
+      const firstKey = routeCache.keys().next().value;
+      routeCache.delete(firstKey);
+    }
+    routeCache.set(cacheKey, routeData);
+
+    return res.status(200).json({
+      success: true,
+      data: routeData
+    });
+  } catch (error) {
+    logger.error('Directions route exception:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to calculate directions route.'
     });
   }
 };

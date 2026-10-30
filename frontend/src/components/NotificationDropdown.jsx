@@ -1,9 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import './NotificationDropdown.css';
 
 const NotificationDropdown = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -33,7 +35,11 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
 
     // Navigate to related resource
     if (notif.relatedOrderId) {
-      navigate(`/orders/${notif.relatedOrderId}`);
+      if (user?.role === 'SHOP_OWNER') {
+        navigate('/owner/orders');
+      } else {
+        navigate('/notifications');
+      }
     } else if (notif.type.includes('SHOP')) {
       navigate('/owner/shop');
     }

@@ -12,6 +12,15 @@ export const errorHandler = (err, req, res, next) => {
     stack: isDevelopment ? err.stack : undefined
   });
 
+  // Catch Mongoose disconnected / query buffering timeouts gracefully
+  if (err.name === 'MongooseError' && (err.message.includes('buffering timed out') || err.message.includes('buffering'))) {
+    return res.status(503).json({
+      status: 'error',
+      statusCode: 503,
+      message: 'Database service is currently unreachable. Please ensure the MongoDB service is running.'
+    });
+  }
+
   res.status(statusCode).json({
     status: 'error',
     statusCode,

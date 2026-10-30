@@ -54,7 +54,7 @@ export const connectDB = async () => {
   try {
     logger.info('Attempting to connect to MongoDB...');
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000, // 5 seconds timeout for quick feedback
+      serverSelectionTimeoutMS: 20000, // 20 seconds timeout for Atlas DNS/TLS handshake
       maxPoolSize: 10, // Maintain up to 10 socket connections
       socketTimeoutMS: 45000 // Close sockets after 45 seconds of inactivity
     });

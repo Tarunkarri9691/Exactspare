@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchRecommendations } from '../services/api';
-import { useCart } from '../context/CartContext';
+import { fetchRecommendations, getImageUrl } from '../services/api';
 import { useCompare } from '../context/CompareContext';
 import './SmartRecommendations.css';
 
@@ -16,8 +15,7 @@ const SmartRecommendations = ({
 }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cartAlert, setCartAlert] = useState('');
-  const { addToCart } = useCart();
+  const [actionAlert, setActionAlert] = useState('');
   const { addToCompare, isInCompare, openCompareModal } = useCompare();
 
   useEffect(() => {
@@ -41,24 +39,13 @@ const SmartRecommendations = ({
     loadRecs();
   }, [productId, category, vehicleType, make, model]);
 
-  const handleAddToCart = async (product) => {
-    const res = await addToCart(product._id, 1);
-    if (res.success) {
-      setCartAlert(`Added "${product.partName}" to cart!`);
-      setTimeout(() => setCartAlert(''), 3000);
-    } else {
-      setCartAlert(res.error || 'Could not add to cart');
-      setTimeout(() => setCartAlert(''), 3000);
-    }
-  };
-
   const handleCompareClick = (product) => {
     const res = addToCompare(product);
     if (res.success) {
       openCompareModal();
     } else {
-      setCartAlert(res.message);
-      setTimeout(() => setCartAlert(''), 3000);
+      setActionAlert(res.message);
+      setTimeout(() => setActionAlert(''), 3000);
     }
   };
 
@@ -78,9 +65,9 @@ const SmartRecommendations = ({
         </div>
       </div>
 
-      {cartAlert && (
+      {actionAlert && (
         <div className="recommendations-alert">
-          {cartAlert}
+          {actionAlert}
         </div>
       )}
 
@@ -104,7 +91,7 @@ const SmartRecommendations = ({
                   <Link to={`/parts/${part._id}`}>
                     {part.image ? (
                       <img
-                        src={`http://localhost:5000${part.image}`}
+                        src={getImageUrl(part.image)}
                         alt={part.partName}
                         className="rec-img"
                         onError={(e) => {
@@ -168,13 +155,13 @@ const SmartRecommendations = ({
 
                   {/* Actions */}
                   <div className="rec-actions">
-                    <button
-                      className="btn btn-sm btn-primary rec-cart-btn"
-                      onClick={() => handleAddToCart(part)}
-                      disabled={part.stockQuantity <= 0}
+                    <Link
+                      to={`/parts/${part._id}`}
+                      className="btn btn-sm btn-primary rec-details-link"
+                      style={{ textDecoration: 'none', textAlign: 'center' }}
                     >
-                      🛒 Add to Cart
-                    </button>
+                      View Details
+                    </Link>
 
                     <button
                       className={`btn btn-sm ${inCompare ? 'btn-active-compare' : 'btn-outline'} rec-compare-btn`}

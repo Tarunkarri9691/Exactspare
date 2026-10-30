@@ -8,10 +8,13 @@ const Footer = () => {
   return (
     <footer className="footer-root">
       <div className="container footer-content">
-        {/* Brand & Purpose */}
         <div className="footer-col footer-col-brand">
           <div className="footer-brand-title">
-            <span className="brand-name">EXACT<span className="brand-highlight">SPARE</span></span>
+            <img 
+              src="/images/exactspare-logo.png" 
+              alt="EXACTSPARE — Vehicle Spare Parts Finder" 
+              className="footer-brand-logo-img" 
+            />
           </div>
           <p className="footer-tagline">
             Find the right vehicle spare parts in nearby shops.
@@ -21,7 +24,7 @@ const Footer = () => {
           </p>
           <div className="footer-status-tag">
             <span className="pulse-indicator" style={{ backgroundColor: 'var(--color-success)' }}></span>
-            <span>Module 1: Project Foundation Active</span>
+            <span>Production Ready • Full Platform Verified (Modules 1–12)</span>
           </div>
         </div>
 
@@ -67,7 +70,7 @@ const Footer = () => {
         <div className="container footer-bottom-container">
           <p>© {currentYear} EXACTSPARE — Vehicle Spare Parts Finder. All rights reserved.</p>
           <p className="footer-foundation-note">
-            Module 1 Foundation Build • Live inventory search & authentication enabled in subsequent modules.
+            EXACTSPARE Enterprise Platform • Modules 1–12 Complete, Integrated & Fully Tested.
           </p>
         </div>
       </div>

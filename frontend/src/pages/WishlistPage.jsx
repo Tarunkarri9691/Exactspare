@@ -1,31 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
-import { useCart } from '../context/CartContext';
+import { getImageUrl } from '../services/api';
 import './WishlistPage.css';
 
 const WishlistPage = () => {
   const navigate = useNavigate();
-  const { wishlistItems, wishlistCount, loading, removeFromWishlist, moveItemToCart } = useWishlist();
-  const { refreshCart } = useCart();
+  const { wishlistItems, wishlistCount, loading, removeFromWishlist } = useWishlist();
 
-  const [movingId, setMovingId] = useState(null);
   const [feedback, setFeedback] = useState(null);
-
-  const handleMoveToCart = async (productId) => {
-    setMovingId(productId);
-    setFeedback(null);
-    const res = await moveItemToCart(productId, 1);
-    setMovingId(null);
-
-    if (res.success) {
-      setFeedback({ type: 'success', text: 'Item successfully moved to your shopping cart!' });
-      if (refreshCart) refreshCart();
-      setTimeout(() => setFeedback(null), 3500);
-    } else {
-      setFeedback({ type: 'error', text: res.error || 'Failed to move item to cart.' });
-    }
-  };
 
   const handleRemove = async (productId) => {
     const res = await removeFromWishlist(productId);
@@ -61,15 +44,13 @@ const WishlistPage = () => {
               <span className="wishlist-count-tag">{wishlistCount} item{wishlistCount !== 1 ? 's' : ''}</span>
             </h1>
             <p className="wishlist-subtitle">
-              Keep track of compatible vehicle spare parts, monitor pricing, and transfer items straight to checkout.
+              Keep track of compatible vehicle spare parts, compare prices, and locate nearby shops for in-store purchase.
             </p>
           </div>
 
-          {wishlistCount > 0 && (
-            <Link to="/cart" className="btn btn-outline-navy">
-              View Shopping Cart →
-            </Link>
-          )}
+          <Link to="/shops" className="btn btn-outline-navy">
+            Find Nearby Shops →
+          </Link>
         </div>
 
         {/* Feedback Alert */}
@@ -116,8 +97,15 @@ const WishlistPage = () => {
               const isUnavailable = !part.isAvailable;
               const imageSrc =
                 part.imagePaths && part.imagePaths.length > 0
-                  ? `http://localhost:5000${part.imagePaths[0]}`
+                  ? getImageUrl(part.imagePaths[0])
                   : null;
+
+              const shop = part.shopId;
+              const shopCoords = shop?.address?.location?.coordinates || shop?.coordinates;
+              const hasCoords = Array.isArray(shopCoords) && shopCoords.length === 2;
+              const directionsUrl = hasCoords
+                ? `https://www.google.com/maps/dir/?api=1&destination=${shopCoords[1]},${shopCoords[0]}`
+                : (shop?.name ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.name} ${shop.address?.city || ''}`)}` : null);
 
               return (
                 <div key={part._id} className="wishlist-item-card">
@@ -155,8 +143,9 @@ const WishlistPage = () => {
                     <div className="wishlist-compat-badge">
                       <span className="compat-icon">🚗</span>
                       <span>
-                        {part.compatibleBrand} {part.compatibleModel} ({part.vehicleType})
-                        {part.compatibleYears && part.compatibleYears.length > 0 && ` [${part.compatibleYears.join(', ')}]`}
+                        {[part?.compatibleBrand, part?.compatibleModel].filter(Boolean).join(' ') || 'Universal Part'}
+                        {part?.vehicleType ? ` (${part.vehicleType})` : ''}
+                        {part?.compatibleYears && part.compatibleYears.length > 0 && ` [${part.compatibleYears.join(', ')}]`}
                       </span>
                     </div>
 
@@ -189,14 +178,35 @@ const WishlistPage = () => {
 
                     {/* Actions */}
                     <div className="wishlist-card-actions">
-                      <button
-                        type="button"
-                        className="btn btn-primary move-cart-btn"
-                        onClick={() => handleMoveToCart(part._id)}
-                        disabled={isOutOfStock || isUnavailable || movingId === part._id}
+                      <Link
+                        to={`/parts/${part._id}`}
+                        className="btn btn-primary view-part-btn"
+                        style={{ textDecoration: 'none', textAlign: 'center' }}
                       >
-                        {movingId === part._id ? 'Moving...' : 'Move to Cart'}
-                      </button>
+                        View Details
+                      </Link>
+
+                      {shop?._id ? (
+                        <Link
+                          to={`/shops/${shop._id}/directions`}
+                          className="btn btn-outline-navy"
+                          style={{ textDecoration: 'none', textAlign: 'center' }}
+                          title="Get in-app directions to store"
+                        >
+                          📍 Directions
+                        </Link>
+                      ) : directionsUrl ? (
+                        <a
+                          href={directionsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline-navy"
+                          style={{ textDecoration: 'none', textAlign: 'center' }}
+                          title="Get directions to store"
+                        >
+                          📍 Directions
+                        </a>
+                      ) : null}
 
                       <button
                         type="button"

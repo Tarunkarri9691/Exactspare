@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { useCart } from './CartContext';
 import {
   fetchWishlist as apiFetchWishlist,
   addToWishlistApi as apiAddToWishlist,
@@ -12,7 +11,6 @@ const WishlistContext = createContext(null);
 
 export const WishlistProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const { refreshCart } = useCart();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -117,9 +115,6 @@ export const WishlistProvider = ({ children }) => {
       const res = await apiMoveToCart(productId, quantity);
       if (res.success) {
         await refreshWishlist();
-        if (refreshCart) {
-          await refreshCart();
-        }
         return { success: true, message: res.message, cart: res.cart };
       } else {
         return { success: false, error: res.error };

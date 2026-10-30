@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchAiAssistantResponse, fetchAiStatus } from '../services/api';
-import { useCart } from '../context/CartContext';
+import { fetchAiAssistantResponse, fetchAiStatus, getImageUrl } from '../services/api';
 import { useCompare } from '../context/CompareContext';
+import { useVehicle } from '../context/VehicleContext';
 import './AiAssistantModal.css';
 
 const INITIAL_MESSAGE = {
@@ -25,10 +25,10 @@ const AiAssistantModal = ({ isOpen, onClose, initialQuery = '' }) => {
   const [providerInfo, setProviderInfo] = useState({ isConfigured: false, provider: 'none' });
   const [alertMsg, setAlertMsg] = useState('');
 
+  const { vehicle } = useVehicle();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const { addToCart } = useCart();
   const { addToCompare, isInCompare, openCompareModal } = useCompare();
 
   // Fetch AI status on mount
@@ -79,7 +79,10 @@ const AiAssistantModal = ({ isOpen, onClose, initialQuery = '' }) => {
         history: messages.slice(-4).map((m) => ({
           role: m.sender === 'user' ? 'user' : 'assistant',
           content: m.text
-        }))
+        })),
+        context: {
+          vehicle: vehicle?.vehicleType ? vehicle : null
+        }
       });
 
       if (res.success && res.data) {
@@ -125,17 +128,6 @@ const AiAssistantModal = ({ isOpen, onClose, initialQuery = '' }) => {
 
   const handleClearChat = () => {
     setMessages([INITIAL_MESSAGE]);
-  };
-
-  const handleAddToCart = async (product) => {
-    const res = await addToCart(product._id, 1);
-    if (res.success) {
-      setAlertMsg(`Added "${product.partName}" to cart!`);
-      setTimeout(() => setAlertMsg(''), 3000);
-    } else {
-      setAlertMsg(res.error || 'Failed to add item to cart');
-      setTimeout(() => setAlertMsg(''), 3000);
-    }
   };
 
   const handleCompare = (product) => {
@@ -234,7 +226,7 @@ const AiAssistantModal = ({ isOpen, onClose, initialQuery = '' }) => {
                             <div className="ai-card-img-wrap">
                               {p.image ? (
                                 <img
-                                  src={`http://localhost:5000${p.image}`}
+                                  src={getImageUrl(p.image)}
                                   alt={p.partName}
                                   className="ai-card-img"
                                   onError={(e) => {
@@ -268,26 +260,20 @@ const AiAssistantModal = ({ isOpen, onClose, initialQuery = '' }) => {
                               </div>
 
                               <div className="ai-card-actions">
-                                <button
+                                <Link
+                                  to={`/parts/${p._id}`}
                                   className="btn btn-xs btn-primary"
-                                  onClick={() => handleAddToCart(p)}
-                                  disabled={p.stockQuantity <= 0}
+                                  onClick={onClose}
+                                  style={{ textDecoration: 'none' }}
                                 >
-                                  🛒 Add
-                                </button>
+                                  View Details
+                                </Link>
                                 <button
                                   className={`btn btn-xs ${inCompare ? 'btn-active-compare' : 'btn-outline'}`}
                                   onClick={() => handleCompare(p)}
                                 >
                                   {inCompare ? '✓' : '⚖️ Compare'}
                                 </button>
-                                <Link
-                                  to={`/parts/${p._id}`}
-                                  className="btn btn-xs btn-ghost"
-                                  onClick={onClose}
-                                >
-                                  View
-                                </Link>
                               </div>
                             </div>
                           </div>

@@ -164,7 +164,7 @@ const SearchResultsMapView = ({
           </div>
           <div class="popup-actions-grid">
             <button class="btn-popup-view" id="btn-view-shop-${shop._id}">View Store</button>
-            <a href="${directionsUrl}" target="_blank" rel="noopener noreferrer" class="btn-popup-directions">Get Directions</a>
+            <button class="btn-popup-directions" id="btn-directions-shop-${shop._id}">Get Directions</button>
           </div>
         `;
 
@@ -175,6 +175,13 @@ const SearchResultsMapView = ({
           } else {
             navigate(`/shops/${shop._id}`);
           }
+        });
+
+        popupContent.querySelector(`#btn-directions-shop-${shop._id}`)?.addEventListener('click', () => {
+          const originParams = userLocation?.latitude && userLocation?.longitude
+            ? `?originLat=${userLocation.latitude}&originLng=${userLocation.longitude}`
+            : '';
+          navigate(`/shops/${shop._id}/directions${originParams}`);
         });
 
         marker.bindPopup(popupContent);

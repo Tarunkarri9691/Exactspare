@@ -12,7 +12,7 @@
 
 .shops-hero-banner {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   padding: 10px 0;
 }
 
@@ -28,15 +28,15 @@
   color: var(--color-text-secondary);
   font-size: 1.05rem;
   max-width: 700px;
-  margin: 0 auto 28px;
+  margin: 0 auto 24px;
   line-height: 1.6;
 }
 
 /* Search Bar Form */
 .shops-search-bar-form {
   display: flex;
-  max-width: 840px;
-  margin: 0 auto 24px;
+  max-width: 960px;
+  margin: 0 auto 16px;
   background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -51,10 +51,11 @@
   display: flex;
   align-items: center;
   flex: 2;
-  min-width: 220px;
+  min-width: 200px;
 }
 
-.city-input-group {
+.city-input-group,
+.part-input-group {
   flex: 1.5;
   border-left: 1px solid var(--color-border);
 }
@@ -80,6 +81,130 @@
   font-weight: 700;
   border-radius: var(--radius-sm);
   white-space: nowrap;
+}
+
+/* Controls Strip (GPS & View Toggle) */
+.shops-controls-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 960px;
+  margin: 0 auto 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.location-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-gps {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--color-navy-primary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-gps svg {
+  color: var(--color-orange-primary);
+}
+
+.btn-gps:hover {
+  border-color: var(--color-orange-primary);
+  color: var(--color-orange-primary);
+}
+
+.active-location-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  color: #2e7d32;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.gps-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
+}
+
+.radius-select {
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #a5d6a7;
+  background: #ffffff;
+  color: #2e7d32;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clear-gps-btn {
+  background: transparent;
+  border: none;
+  color: #2e7d32;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.clear-gps-btn:hover {
+  color: #c62828;
+}
+
+.view-toggle-group {
+  display: inline-flex;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn.active {
+  background: var(--color-navy-primary);
+  color: #ffffff;
+}
+
+.geo-notice-banner {
+  max-width: 960px;
+  margin: 0 auto 16px;
+  padding: 10px 16px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: var(--radius-sm);
+  color: #8d6e63;
+  font-size: 0.88rem;
+  text-align: left;
 }
 
 /* Category Filter Pills */
@@ -111,6 +236,15 @@
   background: var(--color-navy-primary);
   color: #ffffff;
   border-color: var(--color-navy-primary);
+}
+
+/* Interactive Map View Container */
+.shops-map-view-container {
+  margin-bottom: 32px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(11, 25, 44, 0.08);
+  border: 1px solid var(--color-border);
 }
 
 /* Shops Grid */
@@ -174,6 +308,19 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.card-dist-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255, 101, 0, 0.9);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
 }
 
 .card-body {
@@ -253,8 +400,28 @@
   color: #007e33;
 }
 
-.card-footer {
+.card-actions-grid {
+  display: flex;
+  gap: 8px;
   margin-top: auto;
+}
+
+.card-actions-grid .btn-primary {
+  flex: 2;
+  font-size: 0.88rem;
+  padding: 10px;
+  text-align: center;
+}
+
+.btn-directions {
+  flex: 1;
+  font-size: 0.82rem;
+  padding: 10px 8px;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-block {
@@ -271,4 +438,25 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+.retry-btn {
+  margin-left: 12px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .shops-hero-title {
+    font-size: 1.8rem;
+  }
+  .city-input-group,
+  .part-input-group {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+  .shops-controls-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

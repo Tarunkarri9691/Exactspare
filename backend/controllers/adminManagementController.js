@@ -313,6 +313,7 @@ export const getAdminUsers = async (req, res, next) => {
       search = '',
       role,
       status,
+      accountStatus,
       page = 1,
       limit = 10
     } = req.query;
@@ -332,8 +333,9 @@ export const getAdminUsers = async (req, res, next) => {
       query.role = role.toUpperCase();
     }
 
-    if (status && status !== 'ALL') {
-      query.accountStatus = status.toUpperCase();
+    const effectiveStatus = status || accountStatus;
+    if (effectiveStatus && effectiveStatus !== 'ALL') {
+      query.accountStatus = effectiveStatus.toUpperCase();
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -352,7 +354,9 @@ export const getAdminUsers = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
+      status: 'ok',
       count: users.length,
+      users,
       data: {
         users,
         pagination: {
@@ -385,9 +389,10 @@ export const getAdminUserDetails = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const [ordersCount, shop] = await Promise.all([
+    const [ordersCount, shop, application] = await Promise.all([
       Order.countDocuments(user.role === 'CUSTOMER' ? { customerId: user._id } : { 'shops.ownerId': user._id }),
-      user.role === 'OWNER' ? Shop.findOne({ ownerId: user._id }) : null
+      user.role === 'OWNER' ? Shop.findOne({ ownerId: user._id }) : null,
+      user.role === 'OWNER' ? ShopApplication.findOne({ ownerId: user._id }).select('shopName status paymentStatus submissionDate createdAt reviewedAt') : null
     ]);
 
     return res.status(200).json({
@@ -397,7 +402,8 @@ export const getAdminUserDetails = async (req, res, next) => {
         stats: {
           ordersCount
         },
-        shop
+        shop,
+        application
       }
     });
   } catch (error) {
@@ -520,7 +526,9 @@ export const getAdminParts = async (req, res, next) => {
       search = '',
       category,
       vehicleType,
-      status, // 'ALL', 'PUBLISHED', 'MODERATED', 'OUT_OF_STOCK'
+      shop,
+      shopId,
+      status, // 'ALL', 'PUBLISHED', 'MODERATED', 'HIDDEN', 'UNPUBLISHED', 'OUT_OF_STOCK'
       page = 1,
       limit = 10
     } = req.query;
@@ -532,19 +540,34 @@ export const getAdminParts = async (req, res, next) => {
       query.$or = [
         { partName: regex },
         { partNumber: regex },
-        { manufacturer: regex }
+        { manufacturer: regex },
+        { 'compatibility.model': regex },
+        { 'compatibility.make': regex }
       ];
     }
 
     if (category && category !== 'ALL') query.category = category;
     if (vehicleType && vehicleType !== 'ALL') query.vehicleType = vehicleType;
 
-    if (status === 'MODERATED') {
+    const targetShop = shop || shopId;
+    if (targetShop && targetShop !== 'ALL') {
+      if (mongoose.Types.ObjectId.isValid(targetShop)) {
+        query.shopId = targetShop;
+      } else {
+        const matchingShops = await Shop.find({ name: new RegExp(targetShop.trim(), 'i') }).select('_id');
+        query.shopId = { $in: matchingShops.map((s) => s._id) };
+      }
+    }
+
+    const normStatus = (status || '').toUpperCase();
+    if (normStatus === 'MODERATED' || normStatus === 'HIDDEN') {
       query.isModerated = true;
-    } else if (status === 'PUBLISHED') {
+    } else if (normStatus === 'PUBLISHED') {
       query.isPublished = true;
       query.isModerated = false;
-    } else if (status === 'OUT_OF_STOCK') {
+    } else if (normStatus === 'UNPUBLISHED') {
+      query.isPublished = false;
+    } else if (normStatus === 'OUT_OF_STOCK') {
       query.stockQuantity = { $lte: 0 };
     }
 

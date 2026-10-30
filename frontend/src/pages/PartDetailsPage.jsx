@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchPartByIdApi } from '../services/api';
-import { useCart } from '../context/CartContext';
+import { fetchPartByIdApi, getImageUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCompare } from '../context/CompareContext';
 import ProductReviewsSection from '../components/ProductReviewsSection';
 import SmartRecommendations from '../components/SmartRecommendations';
+import ReportModal from '../components/ReportModal';
+import CustomerEnquiryModal from '../components/CustomerEnquiryModal';
 import './PartDetailsPage.css';
 
 const PartDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem } = useCart();
   const { user } = useAuth();
   const { isItemInWishlist, toggleWishlist } = useWishlist();
   const { addToCompare, isInCompare, openCompareModal } = useCompare();
@@ -21,10 +21,10 @@ const PartDetailsPage = () => {
   const [activePhoto, setActivePhoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedQty, setSelectedQty] = useState(1);
-  const [cartFeedback, setCartFeedback] = useState(null);
-  const [isAdding, setIsAdding] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState(null);
   const [wishlistPending, setWishlistPending] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
   useEffect(() => {
     const loadPart = async () => {
@@ -37,6 +37,26 @@ const PartDetailsPage = () => {
           setPart(p);
           if (p.imagePaths && p.imagePaths.length > 0) {
             setActivePhoto(p.imagePaths[0]);
+          }
+          try {
+            const raw = localStorage.getItem('exactspare_recently_viewed_parts');
+            let list = raw ? JSON.parse(raw) : [];
+            list = list.filter(item => item._id !== p._id);
+            list.unshift({
+              _id: p._id,
+              name: p.name,
+              category: p.category,
+              price: p.price,
+              images: p.images || p.imagePaths,
+              imagePaths: p.imagePaths,
+              partNumber: p.partNumber,
+              manufacturer: p.manufacturer,
+              shopId: p.shopId
+            });
+            if (list.length > 8) list = list.slice(0, 8);
+            localStorage.setItem('exactspare_recently_viewed_parts', JSON.stringify(list));
+          } catch {
+            // storage may fail in private mode
           }
         } else {
           setError(res.error || 'Spare part not found or listing has been archived.');
@@ -51,39 +71,13 @@ const PartDetailsPage = () => {
     loadPart();
   }, [id]);
 
-  const handleAddToCart = async (goToCheckout = false) => {
-    if (!user) {
-      navigate(`/login?redirect=/parts/${id}`);
-      return;
-    }
-    if (user.role !== 'CUSTOMER') {
-      setCartFeedback({ type: 'error', text: 'Please sign in with a Customer account to buy parts.' });
-      return;
-    }
-
-    setIsAdding(true);
-    setCartFeedback(null);
-    const res = await addItem(part._id, selectedQty);
-    setIsAdding(false);
-
-    if (res.success) {
-      if (goToCheckout) {
-        navigate('/checkout');
-      } else {
-        setCartFeedback({ type: 'success', text: `Added ${selectedQty} item(s) to your cart!` });
-      }
-    } else {
-      setCartFeedback({ type: 'error', text: res.error || 'Failed to add item to cart' });
-    }
-  };
-
   const handleToggleWishlist = async () => {
     if (!user) {
       navigate(`/login?redirect=/parts/${id}`);
       return;
     }
     if (user.role !== 'CUSTOMER') {
-      setCartFeedback({ type: 'error', text: 'Only customer accounts can maintain a wishlist.' });
+      setActionFeedback({ type: 'error', text: 'Only customer accounts can maintain a wishlist.' });
       return;
     }
 
@@ -93,13 +87,13 @@ const PartDetailsPage = () => {
 
     if (res.success) {
       const inW = isItemInWishlist(part._id);
-      setCartFeedback({
+      setActionFeedback({
         type: 'success',
         text: inW ? 'Item added to your wishlist!' : 'Item removed from your wishlist.'
       });
-      setTimeout(() => setCartFeedback(null), 3000);
+      setTimeout(() => setActionFeedback(null), 3000);
     } else {
-      setCartFeedback({ type: 'error', text: res.error || 'Failed to update wishlist.' });
+      setActionFeedback({ type: 'error', text: res.error || 'Failed to update wishlist.' });
     }
   };
 
@@ -138,6 +132,16 @@ const PartDetailsPage = () => {
   const shop = part.shopId;
   const inWishlist = isItemInWishlist(part._id);
 
+  const shopCoords = shop?.address?.location?.coordinates || shop?.coordinates;
+  const hasCoords = Array.isArray(shopCoords) && shopCoords.length === 2;
+  const shopCity = shop?.address?.city || '';
+  const shopState = shop?.address?.state || '';
+  const shopName = shop?.name || 'Verified Retailer';
+  const shopPhone = shop?.contact?.phone || shop?.phone;
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${shopCoords[1]},${shopCoords[0]}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shopName} ${shopCity} ${shopState}`.trim())}`;
+
   return (
     <div className="part-details-page-root">
       <div className="container part-details-container">
@@ -157,21 +161,29 @@ const PartDetailsPage = () => {
             <div className="main-photo-stage">
               {activePhoto ? (
                 <img
-                  src={`http://localhost:5000${activePhoto}`}
+                  src={getImageUrl(activePhoto)}
                   alt={part.partName}
                   className="main-display-img"
+                  decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fb = e.currentTarget.parentElement?.querySelector('.no-photo-box');
+                    if (fb) fb.style.display = 'flex';
+                  }}
                 />
-              ) : (
-                <div className="no-photo-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <circle cx="8" cy="10" r="2"></circle>
-                    <line x1="21" y1="15" x2="16" y2="10"></line>
-                    <line x1="11" y1="15" x2="14" y2="12"></line>
-                  </svg>
-                  <span>No Product Image Uploaded</span>
-                </div>
-              )}
+              ) : null}
+              <div
+                className="no-photo-box"
+                style={{ display: activePhoto ? 'none' : 'flex' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <circle cx="8" cy="10" r="2"></circle>
+                  <line x1="21" y1="15" x2="16" y2="10"></line>
+                  <line x1="11" y1="15" x2="14" y2="12"></line>
+                </svg>
+                <span>No Product Image Uploaded</span>
+              </div>
             </div>
 
             {part.imagePaths && part.imagePaths.length > 1 && (
@@ -183,7 +195,13 @@ const PartDetailsPage = () => {
                     className={`thumb-btn ${activePhoto === path ? 'active-thumb' : ''}`}
                     onClick={() => setActivePhoto(path)}
                   >
-                    <img src={`http://localhost:5000${path}`} alt={`Thumbnail ${idx + 1}`} />
+                    <img
+                      src={getImageUrl(path)}
+                      alt={`Thumbnail ${idx + 1}`}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
+                    />
                   </button>
                 ))}
               </div>
@@ -247,101 +265,130 @@ const PartDetailsPage = () => {
                 )}
               </div>
 
-              {/* Cart / Wishlist Feedback Message */}
-              {cartFeedback && (
+              {/* Feedback Message */}
+              {actionFeedback && (
                 <div
-                  className={`auth-alert ${cartFeedback.type === 'success' ? 'success-alert' : 'error-alert'}`}
+                  className={`auth-alert ${actionFeedback.type === 'success' ? 'success-alert' : 'error-alert'}`}
                   style={{ marginTop: '14px', marginBottom: '4px' }}
                 >
-                  <span>{cartFeedback.text}</span>
+                  <span>{actionFeedback.text}</span>
                 </div>
               )}
 
-              {/* Add to Cart & Wishlist Actions */}
-              {!isOutOfStock && (
-                <div className="cart-purchase-actions">
-                  <div className="qty-selector-wrap">
-                    <label className="qty-label">Quantity:</label>
-                    <div className="qty-picker">
-                      <button
-                        type="button"
-                        className="picker-btn"
-                        onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}
-                        disabled={selectedQty <= 1}
-                      >
-                        -
-                      </button>
-                      <span className="picker-num">{selectedQty}</span>
-                      <button
-                        type="button"
-                        className="picker-btn"
-                        onClick={() => setSelectedQty((q) => Math.min(part.stockQuantity, q + 1))}
-                        disabled={selectedQty >= part.stockQuantity}
-                      >
-                        +
-                      </button>
-                    </div>
+              {/* Direct Shop Finder & In-Store Purchase Actions */}
+              <div className="store-finder-actions-box" style={{ marginTop: '20px', padding: '16px', background: 'var(--color-surface-subtle, #f8fafc)', borderRadius: '10px', border: '1px solid var(--color-border, #e2e8f0)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '22px' }}>🏬</span>
+                  <div>
+                    <strong style={{ fontSize: '15px', color: 'var(--color-navy-primary, #0f172a)', display: 'block', marginBottom: '2px' }}>
+                      In-Store Purchase Directly from Shop
+                    </strong>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted, #64748b)', lineHeight: '1.4' }}>
+                      Exactspare connects you with verified local automotive merchants. Visit or contact this shop directly to verify part fitment and buy in person.
+                    </p>
                   </div>
+                </div>
 
-                  <div className="pdp-cart-buttons">
-                    <button
-                      type="button"
-                      className="btn btn-primary add-to-cart-btn"
-                      onClick={() => handleAddToCart(false)}
-                      disabled={isAdding}
+                <div className="pdp-finder-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-warning"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
+                    onClick={() => {
+                      if (!user) {
+                        navigate('/login', { state: { from: `/parts/${id}` } });
+                        return;
+                      }
+                      setShowEnquiryModal(true);
+                    }}
+                    title="Send enquiry or fitment question to shop owner"
+                    id="part-contact-shop-btn"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>💬 Contact Shop / Send Enquiry</span>
+                  </button>
+
+                  <Link
+                    to={shop?._id ? `/shops/${shop._id}/directions` : '#'}
+                    className="btn btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', fontWeight: 600 }}
+                    title="Get in-app driving directions to this shop"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                    <span>Get Directions ➔</span>
+                  </Link>
+
+                  {shopPhone && (
+                    <a
+                      href={`tel:${shopPhone}`}
+                      className="btn btn-outline"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', fontWeight: 600 }}
+                      title={`Call ${shopName} at ${shopPhone}`}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="btn-icon">
-                        <circle cx="9" cy="21" r="1"></circle>
-                        <circle cx="20" cy="21" r="1"></circle>
-                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                       </svg>
-                      {isAdding ? 'Adding...' : 'Add to Cart'}
-                    </button>
+                      <span>Call Shop ({shopPhone})</span>
+                    </a>
+                  )}
 
+                  <Link
+                    to="/shops"
+                    className="btn btn-outline"
+                    style={{ fontWeight: 600 }}
+                    title="Browse all approved spare part partner shops"
+                  >
+                    Find Nearby Shops
+                  </Link>
+
+                  {(!user || user.role === 'CUSTOMER') && (
                     <button
                       type="button"
-                      className="btn btn-outline-navy buy-now-btn"
-                      onClick={() => handleAddToCart(true)}
-                      disabled={isAdding}
+                      className={`btn btn-outline pdp-wishlist-btn ${inWishlist ? 'in-wishlist' : ''}`}
+                      onClick={handleToggleWishlist}
+                      disabled={wishlistPending}
+                      title={inWishlist ? 'Remove from saved wishlist' : 'Save part to wishlist'}
                     >
-                      Buy Now
+                      <svg viewBox="0 0 24 24" fill={inWishlist ? '#ff6b00' : 'none'} stroke={inWishlist ? '#ff6b00' : 'currentColor'} strokeWidth="2" className="btn-icon">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                      <span>{inWishlist ? 'In Wishlist' : 'Wishlist'}</span>
                     </button>
+                  )}
 
-                    {(!user || user.role === 'CUSTOMER') && (
-                      <button
-                        type="button"
-                        className={`btn btn-outline pdp-wishlist-btn ${inWishlist ? 'in-wishlist' : ''}`}
-                        onClick={handleToggleWishlist}
-                        disabled={wishlistPending}
-                        title={inWishlist ? 'Remove from saved wishlist' : 'Save part to wishlist'}
-                      >
-                        <svg viewBox="0 0 24 24" fill={inWishlist ? '#ff6b00' : 'none'} stroke={inWishlist ? '#ff6b00' : 'currentColor'} strokeWidth="2" className="btn-icon">
-                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                        </svg>
-                        <span>{inWishlist ? 'In Wishlist' : 'Wishlist'}</span>
-                      </button>
-                    )}
+                  <button
+                    type="button"
+                    className={`btn btn-outline pdp-compare-btn ${isInCompare(part._id) ? 'btn-navy' : ''}`}
+                    onClick={() => {
+                      const res = addToCompare(part);
+                      if (res.success) {
+                        openCompareModal();
+                      } else {
+                        setActionFeedback({ type: 'error', text: res.message });
+                        setTimeout(() => setActionFeedback(null), 3500);
+                      }
+                    }}
+                    title="Add to product comparison matrix"
+                  >
+                    <span style={{ marginRight: '4px' }}>⚖️</span>
+                    <span>{isInCompare(part._id) ? 'Comparing' : 'Compare'}</span>
+                  </button>
 
-                    <button
-                      type="button"
-                      className={`btn btn-outline pdp-compare-btn ${isInCompare(part._id) ? 'btn-navy' : ''}`}
-                      onClick={() => {
-                        const res = addToCompare(part);
-                        if (res.success) {
-                          openCompareModal();
-                        } else {
-                          setCartFeedback({ type: 'error', text: res.message });
-                          setTimeout(() => setCartFeedback(null), 3500);
-                        }
-                      }}
-                      title="Add to product comparison matrix"
-                    >
-                      <span style={{ marginRight: '4px' }}>⚖️</span>
-                      <span>{isInCompare(part._id) ? 'Comparing' : 'Compare'}</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline pdp-report-btn"
+                    onClick={() => setShowReportModal(true)}
+                    title="Report incorrect specs, counterfeit part, or pricing issue"
+                  >
+                    <span style={{ marginRight: '4px' }}>🚩</span>
+                    <span>Report</span>
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Vehicle Compatibility Specs Table */}
@@ -350,7 +397,7 @@ const PartDetailsPage = () => {
               <div className="specs-table">
                 <div className="spec-row">
                   <span className="spec-label">Target Vehicle Type</span>
-                  <span className="spec-val"><strong>{part.vehicleType}</strong></span>
+                  <span className="spec-val"><strong>{part?.vehicleType || 'Universal / Multi-Category'}</strong></span>
                 </div>
 
                 {part.compatibleMakes && part.compatibleMakes.length > 0 && (
@@ -431,18 +478,16 @@ const PartDetailsPage = () => {
                   </Link>
 
                   {shop.address?.location?.coordinates && (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${shop.address.location.coordinates[1]},${shop.address.location.coordinates[0]}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      to={`/shops/${shop._id}/directions`}
                       className="btn btn-primary btn-block"
                       style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none' }}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
                       </svg>
-                      <span>Get Directions to Store ↗</span>
-                    </a>
+                      <span>Get In-App Directions ➔</span>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -459,13 +504,31 @@ const PartDetailsPage = () => {
         {/* Module 10: Smart Recommendations & Compatible Alternatives */}
         <div style={{ marginTop: '40px' }}>
           <SmartRecommendations
-            productId={part._id}
-            category={part.category}
-            vehicleType={part.vehicleType}
+            productId={part?._id}
+            category={part?.category}
+            vehicleType={part?.vehicleType || ''}
             title="Compatible Alternatives & Similar Parts"
             subtitle="Verified in-stock alternatives from approved shops matching this vehicle specification."
           />
         </div>
+
+        {/* Module 17: Customer Product Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetType="PRODUCT"
+          targetId={part._id}
+          targetTitle={part.partName}
+          shopId={shop?._id}
+        />
+
+        {/* Prompt 6: Customer Enquiry Modal */}
+        <CustomerEnquiryModal
+          isOpen={showEnquiryModal}
+          onClose={() => setShowEnquiryModal(false)}
+          shop={shop}
+          part={part}
+        />
       </div>
     </div>
   );

@@ -80,6 +80,11 @@ backend/uploads/parts/*
 !backend/uploads/parts/.gitkeep
 backend/uploads/documents/*
 !backend/uploads/documents/.gitkeep
+backend/uploads/temp/*
+!backend/uploads/temp/.gitkeep
+
+# Local user database
+backend/data/
 
 # Temporary and cache directories
 .cache/

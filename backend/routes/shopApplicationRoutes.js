@@ -5,7 +5,9 @@ import {
   getApplicationById,
   updateApplication,
   submitApplication,
-  getSecureDocument
+  getSecureDocument,
+  getPaymentScannerConfig,
+  payAndActivateApplication
 } from '../controllers/shopApplicationController.js';
 import { authenticateUser, authorizeRoles } from '../middleware/authMiddleware.js';
 import { uploadShopApplicationFiles } from '../utils/upload.js';
@@ -16,6 +18,26 @@ const router = express.Router();
  * All routes require authenticated session
  */
 router.use(authenticateUser);
+
+/**
+ * Payment Scanner & Instant Direct Activation Endpoints
+ */
+router.get(
+  '/scanner-config',
+  getPaymentScannerConfig
+);
+
+router.post(
+  '/pay-and-activate',
+  authorizeRoles('OWNER', 'ADMIN'),
+  payAndActivateApplication
+);
+
+router.post(
+  '/:id/pay-and-activate',
+  authorizeRoles('OWNER', 'ADMIN'),
+  payAndActivateApplication
+);
 
 /**
  * Owner Application Endpoints
@@ -57,3 +79,4 @@ router.get(
 );
 
 export default router;
+

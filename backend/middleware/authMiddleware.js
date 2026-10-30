@@ -58,6 +58,19 @@ export const authenticateUser = async (req, res, next) => {
       });
     }
 
+    // Invalidate session if password was changed after the JWT was issued
+    if (user.passwordChangedAt) {
+      const changedTime = user.passwordChangedAt.getTime();
+      const tokenTime = decoded.authTime || (decoded.iat ? decoded.iat * 1000 : null);
+      if (tokenTime && tokenTime < changedTime) {
+        return res.status(401).json({
+          status: 'error',
+          statusCode: 401,
+          message: 'Password was recently changed. Please log in again.'
+        });
+      }
+    }
+
     // Attach user to request object
     req.user = user;
     next();
@@ -111,7 +124,11 @@ export const optionalAuthenticateUser = async (req, res, next) => {
         const decoded = verifyToken(token);
         const user = await User.findById(decoded.id);
         if (user && user.accountStatus !== 'SUSPENDED') {
-          req.user = user;
+          const changedTime = user.passwordChangedAt?.getTime();
+          const tokenTime = decoded.authTime || (decoded.iat ? decoded.iat * 1000 : null);
+          if (!changedTime || !tokenTime || tokenTime >= changedTime) {
+            req.user = user;
+          }
         }
       } catch {
         // Silently ignore invalid token on optional auth

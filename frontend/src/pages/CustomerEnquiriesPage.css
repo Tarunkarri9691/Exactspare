@@ -1,0 +1,376 @@
+/* CustomerEnquiriesPage.css */
+
+.customer-enquiries-root {
+  min-height: 75vh;
+  padding: 32px 0 60px;
+  background-color: var(--color-bg-light, #f8fafc);
+}
+
+.customer-enquiries-container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.customer-enquiries-header {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.customer-enquiries-badge {
+  margin-bottom: 8px;
+}
+
+.customer-enquiries-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.customer-enquiries-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cust-alert {
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cust-alert.alert-danger {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.cust-alert.alert-success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.cust-loading-state, .cust-empty-state {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 50px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.cust-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.cust-empty-state h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.cust-empty-desc {
+  color: #64748b;
+  font-size: 0.95rem;
+  max-width: 540px;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.cust-empty-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cust-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0f172a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+/* Enquiries List */
+.cust-enquiries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cust-enquiry-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cust-enquiry-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.status-border-new {
+  border-left: 4px solid #ea580c;
+}
+
+.status-border-in_progress {
+  border-left: 4px solid #0284c7;
+}
+
+.status-border-replied {
+  border-left: 4px solid #16a34a;
+}
+
+.status-border-closed {
+  border-left: 4px solid #94a3b8;
+}
+
+.cust-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cust-shop-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cust-shop-icon {
+  font-size: 22px;
+}
+
+.cust-shop-name {
+  font-size: 1.05rem;
+  color: #0f172a;
+  display: block;
+}
+
+.cust-shop-addr {
+  font-size: 12.5px;
+  color: #64748b;
+  display: block;
+}
+
+.cust-status-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.cust-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-new {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.badge-in_progress {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-replied {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge-closed {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.cust-date-label {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* Part Ref Box */
+.cust-part-reference-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cust-part-icon {
+  font-size: 18px;
+}
+
+.cust-part-details {
+  flex: 1;
+}
+
+.cust-part-title {
+  font-size: 13.5px;
+  color: #0f172a;
+  display: block;
+}
+
+.cust-part-sku {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.cust-part-view-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ea580c;
+  text-decoration: none;
+}
+
+.cust-part-view-link:hover {
+  text-decoration: underline;
+}
+
+/* Vehicle Box */
+.cust-vehicle-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 9px 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.cust-vehicle-icon {
+  font-size: 16px;
+  margin-top: 1px;
+}
+
+.cust-vehicle-heading {
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.cust-vehicle-q {
+  margin-top: 4px;
+  color: #334155;
+  font-style: italic;
+}
+
+/* Customer message box */
+.cust-message-box {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 14px;
+  border-left: 3px solid #0f172a;
+}
+
+.cust-subject-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.cust-message-body {
+  font-size: 13.5px;
+  color: #334155;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Latest Reply Box */
+.cust-latest-reply-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  border-left: 3px solid #16a34a;
+}
+
+.reply-merchant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.merchant-tag {
+  font-weight: 700;
+  color: #15803d;
+}
+
+.reply-timestamp {
+  color: #64748b;
+}
+
+.reply-text-preview {
+  font-size: 13.5px;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Card footer */
+.cust-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.thread-count-meta {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+/* Pagination */
+.cust-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+}

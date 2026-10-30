@@ -228,12 +228,17 @@ const CustomerOrdersPage = () => {
                           <span className="total-lbl">Total Amount:</span>
                           <span className="total-val">₹{order.totalAmount?.toLocaleString('en-IN')}</span>
                         </div>
-                        <Link to={`/orders/${order._id}`} className="btn btn-primary btn-sm view-details-btn">
-                          View Order Details
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="btn-icon">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                          </svg>
-                        </Link>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <Link to={`/orders/${order._id}/track`} className="btn btn-outline-navy btn-sm">
+                            📍 Track Order
+                          </Link>
+                          <Link to={`/orders/${order._id}`} className="btn btn-primary btn-sm view-details-btn">
+                            View Details
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="btn-icon">
+                              <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>

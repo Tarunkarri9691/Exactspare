@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { searchByIdentifier } from '../services/api';
+import { searchByIdentifier, getImageUrl } from '../services/api';
 import './BarcodeScannerModal.css';
 
 const BARCODE_FORMATS = [
@@ -395,7 +395,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, onSelectPart, ini
             <div className="scanner-result-body">
               {scanResult.imagePaths?.[0] ? (
                 <img
-                  src={scanResult.imagePaths[0].startsWith('http') ? scanResult.imagePaths[0] : `http://localhost:5000${scanResult.imagePaths[0]}`}
+                  src={getImageUrl(scanResult.imagePaths[0])}
                   alt={scanResult.partName}
                   className="scanner-result-thumb"
                 />

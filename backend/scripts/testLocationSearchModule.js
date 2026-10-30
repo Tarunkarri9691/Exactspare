@@ -590,8 +590,38 @@ const runModule5Tests = async () => {
       logFail(17, 'Authentic values verification', `Reported: ${reportedDist}, Expected: ${expectedDist}`);
     }
 
+    // ==========================================
+    // Scenario 18: Regression test for search without vehicleType or with vehicleType=ALL
+    // Ensures customers can search without selecting a vehicle first
+    // ==========================================
+    const res18A = await makeRequest('/api/search/nearby-parts?q=');
+    const res18B = await makeRequest('/api/search/nearby-parts?vehicleType=ALL');
+    if (
+      res18A.status === 200 &&
+      res18B.status === 200 &&
+      Array.isArray(res18A.data.data?.parts) &&
+      Array.isArray(res18B.data.data?.parts)
+    ) {
+      logPass(18, 'Regression test: Search without vehicle selection and vehicleType=ALL runs safely without errors');
+    } else {
+      logFail(18, 'Search without vehicle filter', JSON.stringify(res18A.data));
+    }
+
+    // ==========================================
+    // Scenario 19: Regression test for vehicle selection with absent/null query params
+    // Ensures clean responses when search params contain empty strings or missing fields
+    // ==========================================
+    const res19 = await makeRequest('/api/search/nearby-parts?vehicleType=Car&make=&model=&year=');
+    const carParts = res19.data.data?.parts || [];
+    const allCar = carParts.every((p) => p.vehicleType === 'Car');
+    if (res19.status === 200 && allCar && carParts.length > 0) {
+      logPass(19, `Regression test: Empty string make/model/year parameters handled safely (${carParts.length} Car parts returned)`);
+    } else {
+      logFail(19, 'Empty string parameters handling', JSON.stringify(res19.data));
+    }
+
     console.log('\n========================================');
-    console.log('ALL 17 MODULE 5 LOCATION SEARCH TESTS PASSED!');
+    console.log('ALL 19 MODULE 5 LOCATION SEARCH TESTS PASSED!');
     console.log('========================================\n');
   } catch (err) {
     console.error('Unhandled test failure:', err);

@@ -98,7 +98,7 @@ const runModule6Tests = async () => {
         email: customer1Email,
         password: 'CustomerExactSpare@2026',
         confirmPassword: 'CustomerExactSpare@2026',
-        phone: '+91 98765 43210',
+        phone: '9823124567',
         role: 'CUSTOMER'
       }
     });
@@ -113,7 +113,7 @@ const runModule6Tests = async () => {
         email: customer2Email,
         password: 'CustomerExactSpare@2026',
         confirmPassword: 'CustomerExactSpare@2026',
-        phone: '+91 98765 43211',
+        phone: '9845123456',
         role: 'CUSTOMER'
       }
     });
@@ -129,7 +129,7 @@ const runModule6Tests = async () => {
         email: owner1Email,
         password: 'OwnerExactSpare@2026',
         confirmPassword: 'OwnerExactSpare@2026',
-        phone: '+91 98111 11111',
+        phone: '9850123456',
         role: 'OWNER'
       }
     });
@@ -144,7 +144,7 @@ const runModule6Tests = async () => {
         email: owner2Email,
         password: 'OwnerExactSpare@2026',
         confirmPassword: 'OwnerExactSpare@2026',
-        phone: '+91 98111 22222',
+        phone: '9860123456',
         role: 'OWNER'
       }
     });

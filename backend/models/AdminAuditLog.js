@@ -16,7 +16,7 @@ const adminAuditLogSchema = new mongoose.Schema(
     entityType: {
       type: String,
       required: [true, 'Entity type is required'],
-      enum: ['SHOP', 'SHOP_APPLICATION', 'USER', 'SPARE_PART', 'REVIEW', 'PLATFORM_CONFIG'],
+      enum: ['SHOP', 'SHOP_APPLICATION', 'USER', 'SPARE_PART', 'REVIEW', 'PLATFORM_CONFIG', 'TRUST_CASE', 'REPORT', 'SUBSCRIPTION'],
       index: true
     },
     entityId: {

@@ -44,6 +44,71 @@
   max-width: 750px;
 }
 
+/* Subscriptions Portal Navigation Banner */
+.admin-sub-portal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: var(--radius-lg, 12px);
+  padding: 20px 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  flex-wrap: wrap;
+}
+
+.banner-info-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.banner-icon-badge {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  flex-shrink: 0;
+}
+
+.banner-info-left h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.15rem;
+  color: #FFFFFF;
+}
+
+.banner-info-left p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+#open-subs-portal-link {
+  background: var(--color-orange-primary, #ea580c);
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+#open-subs-portal-link:hover {
+  background: #c2410c;
+  transform: translateY(-1px);
+}
+
 /* Stats Pill Bar */
 .admin-stats-bar {
   display: flex;
@@ -518,3 +583,372 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+/* Admin Payment Scanner Management Card */
+.admin-scanner-manage-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  border-radius: var(--radius-lg, 12px);
+  padding: 24px;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  margin-bottom: 8px;
+}
+
+.scanner-badge-tag-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.admin-scanner-manage-header h2 {
+  color: #ffffff;
+  font-size: 1.4rem;
+  margin: 0 0 6px 0;
+}
+
+.admin-scanner-manage-header p {
+  color: #94a3b8;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.admin-scanner-manage-content {
+  display: grid;
+  grid-template-columns: 160px 1fr auto;
+  gap: 24px;
+  align-items: center;
+  margin-top: 20px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+@media (max-width: 860px) {
+  .admin-scanner-manage-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.scanner-preview-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.admin-mini-qr {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.scanner-preview-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.scanner-details-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scanner-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.info-title {
+  color: #94a3b8;
+  font-weight: 500;
+  min-width: 130px;
+}
+
+.info-code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #38bdf8;
+  font-size: 0.88rem;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.fee-highlight {
+  font-size: 1.1rem;
+  color: #ea580c;
+}
+
+.scanner-edit-form {
+  margin-top: 18px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(234, 88, 12, 0.4);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.scanner-edit-form h3 {
+  font-size: 1.1rem;
+  color: #fdba74;
+  margin: 0 0 12px 0;
+}
+
+.edit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.edit-form-grid label {
+  display: block;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.edit-form-grid .form-control {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* Highly Visible, Animated Admin Scanner Toggle Button */
+.admin-scanner-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  color: #ffffff !important;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(234, 88, 12, 0.45);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-scanner-toggle-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: 0.5s;
+}
+
+.admin-scanner-toggle-btn:hover::after {
+  left: 100%;
+}
+
+.admin-scanner-toggle-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.6);
+  border-color: #ffffff;
+  color: #ffffff !important;
+}
+
+.admin-scanner-toggle-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.admin-scanner-toggle-btn.is-active {
+  background: rgba(239, 68, 68, 0.2);
+  border: 2px solid #ef4444;
+  color: #fca5a5 !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.admin-scanner-toggle-btn.is-active:hover {
+  background: #ef4444;
+  color: #ffffff !important;
+}
+
+.toggle-btn-icon {
+  font-size: 1.15rem;
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.admin-scanner-toggle-btn:hover .toggle-btn-icon {
+  transform: rotate(15deg) scale(1.15);
+}
+
+.toggle-btn-text {
+  color: inherit !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Cancel Button in Scanner Form */
+.admin-scanner-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-scanner-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #ffffff;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* QR Code Uploader Controls */
+.admin-qr-uploader-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-upload-scanner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1e293b;
+  color: #38bdf8;
+  border: 1px dashed #38bdf8;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-upload-scanner:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #7dd3fc;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-revert-scanner {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fdba74;
+  border: 1px solid rgba(253, 186, 116, 0.3);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-revert-scanner:hover {
+  background: rgba(234, 88, 12, 0.2);
+  color: #ffffff;
+}
+
+.admin-qr-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-qr-preview-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 4px;
+  object-fit: contain;
+}
+
+.preview-note {
+  font-size: 0.85rem;
+  color: #86efac;
+  font-weight: 600;
+}
+
+/* =========================================================================
+   MOBILE RESPONSIVE OVERHAUL FOR ADMIN APPLICATIONS
+   ========================================================================= */
+@media (max-width: 768px) {
+  .admin-apps-page-root {
+    padding: 1rem 0 2rem;
+  }
+
+  .admin-page-header h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .admin-page-header p {
+    font-size: 0.88rem !important;
+  }
+
+  .admin-stats-bar {
+    gap: 6px;
+  }
+
+  .stat-pill-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    flex: 1 1 calc(50% - 6px);
+    justify-content: space-between;
+  }
+
+  .admin-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-table-wrapper,
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .admin-data-table {
+    min-width: 650px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-pill-btn {
+    flex: 1 1 100%;
+  }
+
+  .admin-scanner-manage-content {
+    padding: 12px;
+  }
+}
+
+

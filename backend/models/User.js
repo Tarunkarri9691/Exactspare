@@ -45,6 +45,52 @@ const userSchema = new mongoose.Schema(
         message: 'Invalid account status'
       },
       default: 'ACTIVE'
+    },
+    hasActiveSubscription: {
+      type: Boolean,
+      default: false
+    },
+    passwordResetToken: {
+      type: String,
+      select: false,
+      default: null
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+      default: null
+    },
+    passwordChangedAt: {
+      type: Date,
+      default: null
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false
+    },
+    emailVerificationToken: {
+      type: String,
+      select: false,
+      default: null
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
+      default: null
+    },
+    savedVehicle: {
+      vehicleType: { type: String, default: 'ALL' },
+      make: { type: String, default: '' },
+      model: { type: String, default: '' },
+      year: { type: String, default: '' },
+      variant: { type: String, default: '' }
+    },
+    defaultLocation: {
+      address: { type: String, default: '' },
+      city: { type: String, default: '' },
+      postalCode: { type: String, default: '' },
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null }
     }
   },
   {
@@ -74,6 +120,10 @@ userSchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = ret._id;
     delete ret.passwordHash;
+    delete ret.passwordResetToken;
+    delete ret.passwordResetExpires;
+    delete ret.emailVerificationToken;
+    delete ret.emailVerificationExpires;
     delete ret.__v;
     return ret;
   }

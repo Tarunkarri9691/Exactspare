@@ -509,3 +509,28 @@
   color: #64748b;
   font-size: 0.82rem;
 }
+
+@media (max-width: 600px) {
+  .part-details-page-root {
+    padding: 16px 0 60px;
+  }
+  .part-gallery-column {
+    padding: 14px;
+  }
+  .main-image-viewport {
+    height: 280px;
+  }
+  .pdp-cart-buttons {
+    flex-direction: column;
+  }
+  .add-to-cart-btn,
+  .buy-now-btn,
+  .pdp-wishlist-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .part-title {
+    font-size: 1.45rem;
+  }
+}
+

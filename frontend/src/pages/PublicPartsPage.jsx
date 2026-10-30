@@ -306,11 +306,12 @@ const PublicPartsPage = () => {
 
   // Vehicle Selector Change Handler
   const handleVehicleChange = (vData) => {
-    setVehicleType(vData.vehicleType);
-    setMake(vData.make);
-    setModel(vData.model);
-    setYear(vData.year);
-    setEngineDetails(vData.engineDetails);
+    if (!vData) return;
+    setVehicleType(vData.vehicleType || 'ALL');
+    setMake(vData.make || '');
+    setModel(vData.model || '');
+    setYear(vData.year || '');
+    setEngineDetails(vData.engineDetails || '');
     setCurrentPage(1);
   };
 
@@ -915,7 +916,7 @@ const PublicPartsPage = () => {
                     <line x1="8" y1="11" x2="14" y2="11"></line>
                   </svg>
                 </div>
-                <h3>No Matching Spare Parts Found</h3>
+                <h3>No matching spare parts found nearby</h3>
                 <p>
                   No available parts in verified shops matched your current filters
                   {locationName ? ` within ${radiusKm} km of ${locationName}` : ''}.
@@ -923,14 +924,33 @@ const PublicPartsPage = () => {
                 <div className="empty-state-suggestions">
                   <ul>
                     <li>Try expanding your search radius (e.g. 50 km or 100 km)</li>
-                    <li>Check your vehicle make and model spelling</li>
-                    <li>Uncheck "In-Stock Only" to view out-of-stock items</li>
+                    <li>Change or clear your vehicle selection</li>
                     <li>Try broader keywords like "Brake", "Filter", or "Oil"</li>
+                    <li>Browse verified partner shops in your region directly</li>
                   </ul>
                 </div>
-                <button type="button" className="btn btn-primary" onClick={handleResetFilters}>
-                  Clear All Filters & Show Available Spares
-                </button>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+                  <button type="button" className="btn btn-primary" onClick={handleResetFilters}>
+                    Clear All Filters
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setRadiusKm(50)}
+                  >
+                    Expand to 50 km Radius
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setShowVehicleSelector(true)}
+                  >
+                    Change Vehicle
+                  </button>
+                  <Link to="/shops" className="btn btn-outline">
+                    Find Nearby Shops ↗
+                  </Link>
+                </div>
               </div>
             ) : (
               /* Products Grid View */

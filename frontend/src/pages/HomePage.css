@@ -44,40 +44,89 @@
 }
 
 .hero-badge-wrap .badge-navy {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.08);
   color: #F8FAFC;
-  border-color: rgba(255, 255, 255, 0.2);
-  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 6px 18px;
   font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
 }
 
 .hero-title {
-  font-size: 2.25rem;
+  font-size: 2.35rem;
   font-weight: 800;
-  color: var(--color-text-white);
-  line-height: 1.2;
-  margin-bottom: var(--spacing-md);
+  color: #FFFFFF;
+  line-height: 1.22;
+  margin-bottom: 16px;
   letter-spacing: -0.02em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 @media (min-width: 768px) {
   .hero-title {
-    font-size: 3rem;
+    font-size: 3.15rem;
   }
 }
 
 .hero-description {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-orange-primary);
-  margin-bottom: var(--spacing-xs);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #CBD5E1;
+  line-height: 1.6;
+  max-width: 750px;
+  margin: 0 auto 20px;
 }
 
-.hero-subtext {
-  font-size: 1rem;
-  color: #94A3B8;
-  max-width: 650px;
-  margin: 0 auto;
+.hero-cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.hero-btn-shops {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(255, 101, 0, 0.4);
+}
+
+.hero-btn-vehicle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(8px);
+}
+
+.hero-btn-vehicle span {
+  color: #FFFFFF !important;
+}
+
+.hero-btn-vehicle:hover {
+  border-color: var(--color-orange-primary) !important;
+  background: rgba(255, 101, 0, 0.2) !important;
+  color: #FFFFFF !important;
+}
+
+
+.active-vehicle-card {
+  border-color: var(--color-orange-primary) !important;
+  background: #FFF7ED !important;
+  box-shadow: 0 6px 18px rgba(255, 101, 0, 0.18) !important;
 }
 
 .hero-search-wrapper {

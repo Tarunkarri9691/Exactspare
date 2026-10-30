@@ -1,0 +1,42 @@
+.route-loading-stage {
+  min-height: calc(100vh - var(--nav-height, 70px) - 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  background: transparent;
+}
+
+.route-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.route-spin-gear {
+  animation: gearSpin 1.4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gear-ring {
+  transform-origin: center;
+}
+
+.route-loading-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748B;
+  letter-spacing: 0.02em;
+}
+
+@keyframes gearSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-spin-gear {
+    animation: none;
+    opacity: 0.8;
+  }
+}

@@ -29,6 +29,14 @@
   margin-bottom: var(--spacing-sm);
 }
 
+.footer-brand-logo-img {
+  height: 48px;
+  width: auto;
+  max-width: 190px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+}
+
 .footer-brand-title .brand-name {
   font-family: var(--font-family-display);
   font-size: 1.4rem;

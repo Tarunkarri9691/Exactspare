@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompare } from '../context/CompareContext';
-import { useCart } from '../context/CartContext';
-import { compareProducts } from '../services/api';
+import { compareProducts, getImageUrl } from '../services/api';
 import './ComparePage.css';
 
 const ComparePage = () => {
   const { compareItems, removeFromCompare, clearCompare } = useCompare();
-  const { addToCart } = useCart();
   const [comparedData, setComparedData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cartAlert, setCartAlert] = useState('');
+  const [actionAlert, setActionAlert] = useState('');
 
   useEffect(() => {
     if (compareItems.length < 2) {
@@ -30,17 +28,6 @@ const ComparePage = () => {
 
     loadComparison();
   }, [compareItems.length]);
-
-  const handleAddToCart = async (product) => {
-    const res = await addToCart(product._id, 1);
-    if (res.success) {
-      setCartAlert(`Added "${product.partName}" to cart!`);
-      setTimeout(() => setCartAlert(''), 3000);
-    } else {
-      setCartAlert(res.error || 'Failed to add item to cart');
-      setTimeout(() => setCartAlert(''), 3000);
-    }
-  };
 
   const productsToDisplay = comparedData?.products || compareItems;
   const metrics = comparedData?.metrics || {};
@@ -66,9 +53,9 @@ const ComparePage = () => {
           )}
         </div>
 
-        {cartAlert && (
+        {actionAlert && (
           <div className="compare-page-alert">
-            {cartAlert}
+            {actionAlert}
           </div>
         )}
 
@@ -116,7 +103,7 @@ const ComparePage = () => {
                             <div className="part-header-img-box">
                               {p.image ? (
                                 <img
-                                  src={`http://localhost:5000${p.image}`}
+                                  src={getImageUrl(p.image)}
                                   alt={p.partName}
                                   className="part-header-img"
                                   onError={(e) => {
@@ -247,20 +234,23 @@ const ComparePage = () => {
                     <td className="row-label">Actions</td>
                     {productsToDisplay.map((p) => (
                       <td key={p._id}>
-                        <div className="compare-actions-cell">
-                          <button
-                            className="btn btn-primary btn-sm btn-block"
-                            onClick={() => handleAddToCart(p)}
-                            disabled={p.stockQuantity <= 0}
-                          >
-                            🛒 Add to Cart
-                          </button>
+                        <div className="compare-actions-cell" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <Link
                             to={`/parts/${p._id}`}
-                            className="btn btn-outline btn-sm btn-block"
+                            className="btn btn-primary btn-sm btn-block"
+                            style={{ textDecoration: 'none', textAlign: 'center' }}
                           >
-                            View Product
+                            View Details
                           </Link>
+                          {p.shopId && (
+                            <Link
+                              to={`/shops/${p.shopId}`}
+                              className="btn btn-outline btn-sm btn-block"
+                              style={{ textDecoration: 'none', textAlign: 'center' }}
+                            >
+                              View Storefront
+                            </Link>
+                          )}
                         </div>
                       </td>
                     ))}

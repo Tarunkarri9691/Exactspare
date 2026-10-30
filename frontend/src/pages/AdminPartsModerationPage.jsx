@@ -128,6 +128,7 @@ const AdminPartsModerationPage = () => {
             >
               <option value="">All Catalog Status</option>
               <option value="published">Published Listings</option>
+              <option value="unpublished">Unpublished Listings</option>
               <option value="hidden">Hidden / Moderated</option>
             </select>
           </div>

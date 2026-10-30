@@ -105,9 +105,9 @@ const OrderConfirmationPage = () => {
                     <div className="confirm-item-main">
                       <h3 className="confirm-item-name">{item.partName}</h3>
                       <div className="confirm-item-subtags">
-                        <span className="confirm-tag">Part #{item.partNumber}</span>
-                        {item.vehicleType && <span className="confirm-tag">{item.vehicleType}</span>}
-                        <span className="confirm-shop">Shop: {item.shopName}</span>
+                        <span className="confirm-tag">Part #{item?.partNumber}</span>
+                        {item?.vehicleType && <span className="confirm-tag">{item.vehicleType}</span>}
+                        <span className="confirm-shop">Shop: {item?.shopName}</span>
                       </div>
                     </div>
 

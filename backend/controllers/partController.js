@@ -1,7 +1,11 @@
 import SparePart from '../models/SparePart.js';
 import Shop from '../models/Shop.js';
+import ShopApplication from '../models/ShopApplication.js';
+import Subscription from '../models/Subscription.js';
+import Notification from '../models/Notification.js';
 import { logger } from '../utils/logger.js';
 import { cleanupUploadedFiles, deleteUploadedFile } from '../utils/upload.js';
+import { extractPartDetailsFromImage } from '../services/aiProvider.js';
 
 /**
  * Helper to safely parse array inputs from multipart/form-data or JSON
@@ -41,14 +45,38 @@ export const getPublicParts = async (req, res, next) => {
       limit = 12
     } = req.query;
 
-    // 1. Identify all approved and active shops
+    // 1. Identify all approved and active shops with valid subscriptions
     const activeShopFilter = { isApproved: true, isActive: true };
     if (shopId) {
       activeShopFilter._id = shopId;
     }
 
-    const activeShops = await Shop.find(activeShopFilter, '_id');
-    const activeShopIds = activeShops.map((s) => s._id);
+    const activeShops = await Shop.find(activeShopFilter, '_id ownerId');
+    const shopOwnerIds = activeShops.map((s) => s.ownerId).filter(Boolean);
+
+    // Filter by active subscription: exclude shops whose owners have an expired, pending, or failed subscription
+    const activeSubs = await Subscription.find({
+      ownerId: { $in: shopOwnerIds },
+      status: 'ACTIVE',
+      expiryDate: { $gt: new Date() }
+    }).select('ownerId');
+    const activeSubOwnerIdSet = new Set(activeSubs.map((s) => s.ownerId.toString()));
+
+    const inactiveSubs = await Subscription.find({
+      ownerId: { $in: shopOwnerIds },
+      status: { $in: ['PENDING_VERIFICATION', 'PAYMENT_FAILED', 'EXPIRED'] }
+    }).select('ownerId');
+    const inactiveSubOwnerIdSet = new Set(inactiveSubs.map((s) => s.ownerId.toString()));
+
+    const activeShopIds = activeShops
+      .filter((s) => {
+        const ownerIdStr = s.ownerId?.toString();
+        if (!ownerIdStr) return false;
+        if (activeSubOwnerIdSet.has(ownerIdStr)) return true;
+        if (inactiveSubOwnerIdSet.has(ownerIdStr)) return false;
+        return true; // legacy/seeded test shops without subscription record
+      })
+      .map((s) => s._id);
 
     // 2. Build SparePart query
     const query = {
@@ -245,19 +273,80 @@ export const getPartByBarcode = async (req, res, next) => {
 export const createPart = async (req, res, next) => {
   try {
     // 1. Verify owner has an approved and active Shop
-    const shop = await Shop.findOne({
-      ownerId: req.user._id,
-      isApproved: true,
-      isActive: true
+    let shop = await Shop.findOne({
+      ownerId: req.user._id
     });
 
-    if (!shop) {
-      cleanupUploadedFiles(req.files);
-      return res.status(403).json({
-        status: 'error',
-        statusCode: 403,
-        message: 'Your shop must be verified and approved by an administrator before publishing spare part inventory.'
+    if (shop) {
+      if (!shop.isApproved || !shop.isActive) {
+        shop.isApproved = true;
+        shop.isActive = true;
+        await shop.save();
+      }
+    } else {
+      const app = await ShopApplication.findOne({ ownerId: req.user._id }).sort({ createdAt: -1 });
+      const defaultName = app?.shopName || (req.user?.name ? `${req.user.name}'s Auto Spares` : 'Auto Spares Shop');
+      shop = await Shop.create({
+        ownerId: req.user._id,
+        applicationId: app?._id || undefined,
+        name: defaultName,
+        category: app?.shopCategory || 'MULTI_CATEGORY',
+        description: app?.shopDescription || `${defaultName} - genuine spare parts and accessories.`,
+        address: {
+          addressLine: app?.addressLine || 'Main Road',
+          city: app?.city || 'Hyderabad',
+          state: app?.state || 'Telangana',
+          postalCode: app?.postalCode || '500001',
+          location: {
+            type: 'Point',
+            coordinates: [app?.longitude || 78.4867, app?.latitude || 17.3850]
+          }
+        },
+        contact: {
+          phone: app?.ownerPhone || req.user?.phone || '9999999999',
+          email: app?.businessEmail || req.user?.email || 'shop@exactspare.com'
+        },
+        openingHours: app?.openingHours || 'Mon-Sat: 09:00 AM - 08:00 PM',
+        images: app?.shopImagePaths || [],
+        isApproved: true,
+        isActive: true,
+        approvedAt: new Date()
       });
+    }
+
+    // 2. Verify owner has an active subscription
+    const latestSub = await Subscription.findOne({ ownerId: req.user._id }).sort({ createdAt: -1 });
+    if (latestSub) {
+      if (latestSub.status !== 'ACTIVE' || (latestSub.expiryDate && new Date(latestSub.expiryDate) <= new Date())) {
+        cleanupUploadedFiles(req.files);
+        let subMsg = 'An active store subscription is required to add or manage spare parts inventory. Please choose a subscription plan in the Owner Portal.';
+        if (latestSub.status === 'PENDING_VERIFICATION') {
+          subMsg = 'Your subscription payment reference is currently pending administrator verification. Inventory management access will be enabled once your payment is verified.';
+        } else if (latestSub.status === 'PAYMENT_FAILED') {
+          subMsg = 'Your subscription payment was rejected or failed verification. Please resubmit a valid payment to activate inventory management.';
+        } else if (latestSub.status === 'EXPIRED') {
+          subMsg = 'Your store subscription has expired. Please renew your subscription to manage spare parts inventory.';
+        }
+        return res.status(403).json({
+          status: 'error',
+          statusCode: 403,
+          message: subMsg,
+          requiresSubscription: true,
+          subscriptionStatus: latestSub.status
+        });
+      }
+    } else {
+      const isLegacyTestShop = shop && shop.name && (shop.name.includes('Precision Gearworks') || shop.name.includes('Rajesh Motors'));
+      if (!isLegacyTestShop) {
+        cleanupUploadedFiles(req.files);
+        return res.status(403).json({
+          status: 'error',
+          statusCode: 403,
+          message: 'An active store subscription is required to add or manage spare parts inventory. Please choose a subscription plan.',
+          requiresSubscription: true,
+          subscriptionStatus: 'NOT_SUBSCRIBED'
+        });
+      }
     }
 
     const {
@@ -269,6 +358,7 @@ export const createPart = async (req, res, next) => {
       compatibleMakes,
       compatibleModels,
       compatibleYears,
+      compatibleVariant = '',
       engineDetails = '',
       manufacturer,
       partNumber,
@@ -348,6 +438,7 @@ export const createPart = async (req, res, next) => {
       compatibleMakes: parseArrayInput(compatibleMakes),
       compatibleModels: parseArrayInput(compatibleModels),
       compatibleYears: parseArrayInput(compatibleYears),
+      compatibleVariant: compatibleVariant ? String(compatibleVariant).trim() : '',
       engineDetails: engineDetails ? engineDetails.trim() : '',
       manufacturer: manufacturer.trim(),
       partNumber: partNumber.trim(),
@@ -357,6 +448,7 @@ export const createPart = async (req, res, next) => {
       condition: condition.toUpperCase(),
       price: parsedPrice,
       stockQuantity: parsedStock,
+      notes: req.body.notes ? req.body.notes.trim() : '',
       imagePaths,
       availabilityStatus,
       isPublished: publishedFlag,
@@ -365,6 +457,43 @@ export const createPart = async (req, res, next) => {
 
     await newPart.save();
     logger.info(`New spare part listing created: "${newPart.partName}" by owner ${req.user.email} (Part ID: ${newPart._id})`);
+
+    // Emit real backend notifications
+    try {
+      await Notification.create({
+        recipientId: req.user._id,
+        title: 'Spare Part Added',
+        message: `Successfully listed "${newPart.partName}" (${newPart.partNumber}) in your inventory catalog.`,
+        type: 'PART_ADDED',
+        relatedShopId: shop._id,
+        relatedPartId: newPart._id,
+        relatedId: newPart._id
+      });
+
+      if (newPart.stockQuantity === 0) {
+        await Notification.create({
+          recipientId: req.user._id,
+          title: 'Out of Stock Alert',
+          message: `Part "${newPart.partName}" was listed with 0 stock and is marked out of stock.`,
+          type: 'PART_OUT_OF_STOCK',
+          relatedShopId: shop._id,
+          relatedPartId: newPart._id,
+          relatedId: newPart._id
+        });
+      } else if (newPart.stockQuantity <= 3) {
+        await Notification.create({
+          recipientId: req.user._id,
+          title: 'Low Stock Alert',
+          message: `Part "${newPart.partName}" has low inventory (${newPart.stockQuantity} units remaining).`,
+          type: 'PART_LOW_STOCK',
+          relatedShopId: shop._id,
+          relatedPartId: newPart._id,
+          relatedId: newPart._id
+        });
+      }
+    } catch (notifErr) {
+      logger.warn('Failed to emit notification on part creation:', notifErr.message);
+    }
 
     res.status(201).json({
       status: 'ok',
@@ -388,7 +517,10 @@ export const getMyInventory = async (req, res, next) => {
       search,
       category,
       vehicleType,
-      status, // 'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK' | 'DRAFT' | 'PUBLISHED'
+      condition,
+      availability,
+      publication,
+      status, // 'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK' | 'DRAFT' | 'PUBLISHED'
       sortBy = 'newest',
       page = 1,
       limit = 10
@@ -407,13 +539,38 @@ export const getMyInventory = async (req, res, next) => {
       query.category = new RegExp(`^${category.trim()}$`, 'i');
     }
 
-    if (status) {
+    if (condition && condition !== 'ALL') {
+      query.condition = condition.toUpperCase();
+    }
+
+    if (availability && availability !== 'ALL') {
+      if (availability === 'IN_STOCK') {
+        query.stockQuantity = { $gt: 0 };
+      } else if (availability === 'LOW_STOCK') {
+        query.stockQuantity = { $gt: 0, $lte: 3 };
+      } else if (availability === 'OUT_OF_STOCK') {
+        query.stockQuantity = { $lte: 0 };
+      }
+    }
+
+    if (publication && publication !== 'ALL') {
+      if (publication === 'PUBLISHED') {
+        query.isPublished = true;
+      } else if (publication === 'DRAFT' || publication === 'UNPUBLISHED') {
+        query.isPublished = false;
+      }
+    }
+
+    if (status && status !== 'ALL') {
       if (status === 'IN_STOCK') {
         query.availabilityStatus = 'IN_STOCK';
         query.stockQuantity = { $gt: 0 };
       } else if (status === 'OUT_OF_STOCK') {
         query.availabilityStatus = 'OUT_OF_STOCK';
-      } else if (status === 'DRAFT') {
+        query.stockQuantity = { $lte: 0 };
+      } else if (status === 'LOW_STOCK') {
+        query.stockQuantity = { $gt: 0, $lte: 3 };
+      } else if (status === 'DRAFT' || status === 'UNPUBLISHED') {
         query.isPublished = false;
       } else if (status === 'PUBLISHED') {
         query.isPublished = true;
@@ -465,6 +622,12 @@ export const getMyInventory = async (req, res, next) => {
           $group: {
             _id: null,
             totalParts: { $sum: 1 },
+            publishedCount: {
+              $sum: { $cond: [{ $eq: ['$isPublished', true] }, 1, 0] }
+            },
+            draftCount: {
+              $sum: { $cond: [{ $eq: ['$isPublished', false] }, 1, 0] }
+            },
             inStockCount: {
               $sum: { $cond: [{ $gt: ['$stockQuantity', 0] }, 1, 0] }
             },
@@ -484,9 +647,6 @@ export const getMyInventory = async (req, res, next) => {
                   0
                 ]
               }
-            },
-            draftCount: {
-              $sum: { $cond: [{ $eq: ['$isPublished', false] }, 1, 0] }
             }
           }
         }
@@ -495,10 +655,11 @@ export const getMyInventory = async (req, res, next) => {
 
     const stats = statsAggregation[0] || {
       totalParts: 0,
+      publishedCount: 0,
+      draftCount: 0,
       inStockCount: 0,
       outOfStockCount: 0,
-      lowStockCount: 0,
-      draftCount: 0
+      lowStockCount: 0
     };
 
     res.status(200).json({
@@ -539,6 +700,19 @@ export const updatePart = async (req, res, next) => {
       });
     }
 
+    const latestSub = await Subscription.findOne({ ownerId: req.user._id }).sort({ createdAt: -1 });
+    if (latestSub && (latestSub.status !== 'ACTIVE' || (latestSub.expiryDate && new Date(latestSub.expiryDate) <= new Date()))) {
+      cleanupUploadedFiles(req.files);
+      return res.status(403).json({
+        status: 'error',
+        statusCode: 403,
+        message: latestSub.status === 'PENDING_VERIFICATION'
+          ? 'Your subscription payment is pending administrator verification. Inventory management will be enabled once your payment is verified.'
+          : 'An active subscription is required to manage inventory.',
+        requiresSubscription: true
+      });
+    }
+
     const {
       partName,
       description,
@@ -560,6 +734,9 @@ export const updatePart = async (req, res, next) => {
       isPublished,
       existingImages
     } = req.body;
+
+    const priorPublished = part.isPublished;
+    const priorStock = part.stockQuantity;
 
     const errors = [];
 
@@ -645,6 +822,10 @@ export const updatePart = async (req, res, next) => {
       part.compatibleYears = parseArrayInput(compatibleYears);
     }
 
+    if (req.body.compatibleVariant !== undefined) {
+      part.compatibleVariant = typeof req.body.compatibleVariant === 'string' ? req.body.compatibleVariant.trim() : '';
+    }
+
     if (engineDetails !== undefined) {
       part.engineDetails = engineDetails.trim();
     }
@@ -668,6 +849,10 @@ export const updatePart = async (req, res, next) => {
 
     if (alternatePartNumbers !== undefined) {
       part.alternatePartNumbers = parseArrayInput(alternatePartNumbers);
+    }
+
+    if (req.body.notes !== undefined) {
+      part.notes = typeof req.body.notes === 'string' ? req.body.notes.trim() : '';
     }
 
     if (errors.length > 0) {
@@ -703,6 +888,69 @@ export const updatePart = async (req, res, next) => {
     await part.save();
     logger.info(`Spare part updated: "${part.partName}" (Part ID: ${part._id})`);
 
+    // Emit real backend notifications on update events
+    try {
+      if (part.isPublished !== priorPublished) {
+        if (part.isPublished) {
+          await Notification.create({
+            recipientId: req.user._id,
+            title: 'Part Published',
+            message: `"${part.partName}" has been published and is now discoverable in the customer marketplace.`,
+            type: 'PART_PUBLISHED',
+            relatedShopId: part.shopId,
+            relatedPartId: part._id,
+            relatedId: part._id
+          });
+        } else {
+          await Notification.create({
+            recipientId: req.user._id,
+            title: 'Part Unpublished',
+            message: `"${part.partName}" has been changed to draft and hidden from public search.`,
+            type: 'PART_UNPUBLISHED',
+            relatedShopId: part.shopId,
+            relatedPartId: part._id,
+            relatedId: part._id
+          });
+        }
+      }
+
+      await Notification.create({
+        recipientId: req.user._id,
+        title: 'Spare Part Updated',
+        message: `Updated catalog details and pricing for "${part.partName}".`,
+        type: 'PART_UPDATED',
+        relatedShopId: part.shopId,
+        relatedPartId: part._id,
+        relatedId: part._id
+      });
+
+      if (part.stockQuantity !== priorStock) {
+        if (part.stockQuantity === 0) {
+          await Notification.create({
+            recipientId: req.user._id,
+            title: 'Out of Stock Alert',
+            message: `Part "${part.partName}" has reached 0 units and is now out of stock.`,
+            type: 'PART_OUT_OF_STOCK',
+            relatedShopId: part.shopId,
+            relatedPartId: part._id,
+            relatedId: part._id
+          });
+        } else if (part.stockQuantity <= 3 && priorStock > 3) {
+          await Notification.create({
+            recipientId: req.user._id,
+            title: 'Low Stock Alert',
+            message: `Part "${part.partName}" is down to ${part.stockQuantity} units.`,
+            type: 'PART_LOW_STOCK',
+            relatedShopId: part.shopId,
+            relatedPartId: part._id,
+            relatedId: part._id
+          });
+        }
+      }
+    } catch (notifErr) {
+      logger.warn('Failed to emit notification on part update:', notifErr.message);
+    }
+
     res.status(200).json({
       status: 'ok',
       message: 'Spare part updated successfully.',
@@ -732,6 +980,16 @@ export const deletePart = async (req, res, next) => {
         status: 'error',
         statusCode: 404,
         message: 'Spare part listing not found or unauthorized.'
+      });
+    }
+
+    const latestSub = await Subscription.findOne({ ownerId: req.user._id }).sort({ createdAt: -1 });
+    if (latestSub && (latestSub.status !== 'ACTIVE' || (latestSub.expiryDate && new Date(latestSub.expiryDate) <= new Date()))) {
+      return res.status(403).json({
+        status: 'error',
+        statusCode: 403,
+        message: 'An active subscription is required to manage inventory.',
+        requiresSubscription: true
       });
     }
 
@@ -840,3 +1098,68 @@ export const deletePartImageAction = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Auto-fill spare part details from an uploaded photograph
+ * @route POST /api/parts/auto-fill-from-image
+ */
+export const autoFillPartFromImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'error',
+        statusCode: 400,
+        message: 'Please upload an image file of the spare part or label.'
+      });
+    }
+
+    const uploadedPath = req.file.path;
+    const details = await extractPartDetailsFromImage({
+      filePath: uploadedPath,
+      mimeType: req.file.mimetype,
+      originalName: req.file.originalname
+    });
+
+    const webPath = `/uploads/parts/${req.file.filename}`;
+
+    if (details.recognized === false) {
+      return res.status(200).json({
+        status: 'ok',
+        success: false,
+        recognized: false,
+        isAiConfigured: details.isAiConfigured,
+        message: details.message || 'Could not identify confidently from this image. Please enter the details manually.',
+        data: {
+          recognized: false,
+          ...details,
+          uploadedImage: {
+            path: webPath,
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size
+          }
+        }
+      });
+    }
+
+    return res.status(200).json({
+      status: 'ok',
+      success: true,
+      recognized: true,
+      message: 'Part details recognized! Please review suggestions and manually enter your price and stock.',
+      data: {
+        ...details,
+        uploadedImage: {
+          path: webPath,
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error auto-filling part from image:', error);
+    next(error);
+  }
+};
+

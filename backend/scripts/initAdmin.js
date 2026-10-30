@@ -14,9 +14,9 @@ const initAdmin = async () => {
 
   // Admin configuration parameters from environment variables or command-line arguments
   const adminName = process.env.ADMIN_NAME || 'Platform Administrator';
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@exactspare.com').toLowerCase().trim();
+  const adminEmail = (process.env.ADMIN_EMAIL || 'naidutarun864@gmail.com').toLowerCase().trim();
   const adminPhone = process.env.ADMIN_PHONE || '+919876543210';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'AdminExactSpare@2026';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123456';
 
   if (!adminPassword || adminPassword.length < 8) {
     logger.error('Admin password must be at least 8 characters long.');

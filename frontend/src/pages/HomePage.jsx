@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import SearchResultCard from '../components/SearchResultCard';
-import SystemHealthWidget from '../components/SystemHealthWidget';
 import SmartRecommendations from '../components/SmartRecommendations';
+import { useVehicle } from '../context/VehicleContext';
 import { fetchSearchMetadata, fetchRecentAvailableParts, fetchPublicShops } from '../services/api';
 import './HomePage.css';
 
@@ -19,47 +19,70 @@ const HomePage = () => {
   const [metadata, setMetadata] = useState(null);
   const [recentParts, setRecentParts] = useState([]);
   const [featuredShops, setFeaturedShops] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
-  const [selectedCategoryInfo, setSelectedCategoryInfo] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  
+  const { vehicle, isVehicleSelected, displayLabel, openVehicleModal, updateVehicle } = useVehicle();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loadHomeData = async () => {
-      setLoadingData(true);
-      try {
-        const [metaRes, recentRes, shopsRes] = await Promise.all([
-          fetchSearchMetadata(),
-          fetchRecentAvailableParts(8),
-          fetchPublicShops({ limit: 4 })
-        ]);
+  const loadHomeData = useCallback(async () => {
+    setLoadingData(true);
+    setLoadError('');
+    try {
+      const [metaRes, recentRes, shopsRes] = await Promise.all([
+        fetchSearchMetadata(),
+        fetchRecentAvailableParts(8),
+        fetchPublicShops({ limit: 4 })
+      ]);
 
-        if (metaRes.success && metaRes.data) {
-          setMetadata(metaRes.data);
-        }
-
-        if (recentRes.success && recentRes.data) {
-          setRecentParts(recentRes.data);
-        }
-
-        if (shopsRes.success && shopsRes.data?.shops) {
-          setFeaturedShops(shopsRes.data.shops);
-        }
-      } catch (err) {
-        console.error('Error loading home data:', err);
-      } finally {
-        setLoadingData(false);
+      if (metaRes.success && metaRes.data) {
+        setMetadata(metaRes.data);
       }
-    };
 
-    loadHomeData();
+      if (recentRes.success && recentRes.data) {
+        setRecentParts(recentRes.data);
+      }
+
+      if (shopsRes.success && shopsRes.data?.shops) {
+        setFeaturedShops(shopsRes.data.shops);
+      }
+    } catch {
+      setLoadError('Failed to load marketplace catalog. Please check your connection and retry.');
+    } finally {
+      setLoadingData(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadHomeData();
+
+    // Load actual recently viewed history from local storage
+    try {
+      const raw = localStorage.getItem('exactspare_recently_viewed_parts');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRecentlyViewed(parsed);
+        }
+      }
+    } catch {
+      // Ignore storage read errors
+    }
+  }, [loadHomeData]);
+
   const handleSelectVehicle = (vType) => {
+    updateVehicle({ vehicleType: vType });
     navigate(`/parts?vehicleType=${vType}`);
   };
 
   const handleSelectCategory = (catName) => {
-    navigate(`/parts?category=${encodeURIComponent(catName)}`);
+    const params = new URLSearchParams();
+    params.set('category', catName);
+    if (vehicle?.vehicleType && vehicle.vehicleType !== 'ALL') {
+      params.set('vehicleType', vehicle.vehicleType);
+    }
+    navigate(`/parts?${params.toString()}`);
   };
 
   return (
@@ -82,6 +105,24 @@ const HomePage = () => {
             <p className="hero-description">
               Directly match spare parts with verified local merchants across Bike, Car, Scooter, Bicycle, and Commercial categories.
             </p>
+
+            {/* Quick Hero Actions: Prominent Find Shops CTA */}
+            <div className="hero-cta-actions">
+              <Link to="/shops" className="btn btn-primary hero-btn-shops">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>Find Nearby Shops</span>
+              </Link>
+              <button
+                type="button"
+                className="btn btn-outline hero-btn-vehicle"
+                onClick={openVehicleModal}
+              >
+                <span>🚘 {isVehicleSelected ? displayLabel : 'Select Your Vehicle'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Prominent Search Bar with Vehicle & Location Selectors */}
@@ -90,6 +131,18 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Network Failure / Retry Banner */}
+      {loadError && (
+        <div className="container" style={{ marginTop: '24px' }}>
+          <div className="auth-alert error-alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{loadError}</span>
+            <button type="button" className="btn btn-sm btn-outline" onClick={loadHomeData}>
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Vehicle Spectrum Selector */}
       <section className="categories-section">
@@ -107,11 +160,16 @@ const HomePage = () => {
           <div className="home-vehicle-grid">
             {STATIC_VEHICLE_CATEGORIES.map((veh) => {
               const matchedCount = metadata?.vehicleTypes?.find((v) => v.name === veh.id)?.count || 0;
+              const isCurrent = vehicle?.vehicleType === veh.id;
+
               return (
                 <div
                   key={veh.id}
-                  className="home-vehicle-card"
+                  className={`home-vehicle-card ${isCurrent ? 'active-vehicle-card' : ''}`}
                   onClick={() => handleSelectVehicle(veh.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSelectVehicle(veh.id); }}
                 >
                   <span className="veh-icon">{veh.icon}</span>
                   <div className="veh-info">
@@ -170,6 +228,39 @@ const HomePage = () => {
           )}
         </div>
       </section>
+
+      {/* Recently Viewed Products (Shown ONLY if genuine customer history exists) */}
+      {recentlyViewed.length > 0 && (
+        <section className="recent-parts-section recently-viewed-section">
+          <div className="container">
+            <div className="section-header">
+              <div className="section-header-text">
+                <span className="badge badge-navy">Your Browsing History</span>
+                <h2 className="section-title">Recently Viewed Parts</h2>
+                <p className="section-subtitle">
+                  Continue where you left off from your previous product searches.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => {
+                  localStorage.removeItem('exactspare_recently_viewed_parts');
+                  setRecentlyViewed([]);
+                }}
+              >
+                Clear History
+              </button>
+            </div>
+
+            <div className="recent-parts-grid">
+              {recentlyViewed.map((part) => (
+                <SearchResultCard key={`rv-${part._id}`} part={part} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Recently Added Available Parts (Real Database Data) */}
       <section className="recent-parts-section">
@@ -239,7 +330,7 @@ const HomePage = () => {
                 <div key={shop._id} className="home-shop-card fade-in">
                   <div className="shop-card-banner">
                     {shop.images && shop.images.length > 0 ? (
-                      <img src={shop.images[0]} alt={shop.name} />
+                      <img src={shop.images[0]} alt={shop.name} loading="lazy" />
                     ) : (
                       <div className="shop-no-photo">Storefront Photo Pending</div>
                     )}
@@ -270,94 +361,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Platform Architecture & Three Roles */}
-      <section className="roles-section">
-        <div className="container">
-          <div className="section-header text-center">
-            <span className="badge badge-navy">Ecosystem Roles</span>
-            <h2 className="section-title">Three Roles, One Unified Marketplace</h2>
-            <p className="section-subtitle">
-              EXACTSPARE bridges vehicle owners and local parts retailers with full administrative trust verification.
-            </p>
-          </div>
-
-          <div className="roles-grid">
-            {/* Customer Role */}
-            <div className="role-card">
-              <div className="role-icon-box customer">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </div>
-              <h3 className="role-title">1. Customer</h3>
-              <p className="role-description">
-                Search part numbers or names, view exact stock in nearby shops, compare rates, and get turn-by-turn directions.
-              </p>
-              <ul className="role-feature-list">
-                <li>Instant nearby radius discovery</li>
-                <li>Verify compatibility before visiting</li>
-                <li>Zero commission direct purchases</li>
-              </ul>
-              <Link to="/parts" className="btn btn-outline role-card-btn">
-                Search Spare Parts
-              </Link>
-            </div>
-
-            {/* Shop Owner Role */}
-            <div className="role-card featured-role">
-              <div className="role-featured-badge">Partner</div>
-              <div className="role-icon-box shop-owner">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-              </div>
-              <h3 className="role-title">2. Shop Owner</h3>
-              <p className="role-description">
-                Apply for store verification, upload storefront photos, manage live catalog inventory, and connect with customers.
-              </p>
-              <ul className="role-feature-list">
-                <li>Upload trade license & storefront</li>
-                <li>Track stock levels & OEM numbers</li>
-                <li>Automatic geolocation store pin</li>
-              </ul>
-              <Link to="/register-owner" className="btn btn-primary role-card-btn">
-                Register as Merchant
-              </Link>
-            </div>
-
-            {/* Admin Role */}
-            <div className="role-card">
-              <div className="role-icon-box admin">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-              </div>
-              <h3 className="role-title">3. Admin</h3>
-              <p className="role-description">
-                Review and approve shop owner registration applications, verify trade licenses, and maintain platform trust.
-              </p>
-              <ul className="role-feature-list">
-                <li>Shop verification & KYC review</li>
-                <li>Platform catalog curation</li>
-                <li>Dispute & security oversight</li>
-              </ul>
-              <div className="admin-status-note">
-                <span className="badge badge-info">Admin Console Active</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* System Health Diagnostics Section */}
-      <section className="diagnostics-section">
-        <div className="container">
-          <SystemHealthWidget />
-        </div>
-      </section>
     </div>
   );
 };

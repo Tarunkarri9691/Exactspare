@@ -127,3 +127,18 @@
   overflow-x: auto;
   max-height: 250px;
 }
+
+@media (max-width: 768px) {
+  .audit-filter-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-actions-inline {
+    width: 100%;
+  }
+  .filter-actions-inline .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+

@@ -62,6 +62,11 @@ const sparePartSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
+    compatibleVariant: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     engineDetails: {
       type: String,
       trim: true,
@@ -160,6 +165,12 @@ const sparePartSchema = new mongoose.Schema(
     },
     moderatedAt: {
       type: Date
+    },
+    notes: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [2000, 'Notes cannot exceed 2000 characters']
     }
   },
   {
@@ -194,6 +205,8 @@ sparePartSchema.pre('save', function (next) {
 // Compound indexes for performant search & filtering
 sparePartSchema.index({ shopId: 1, isArchived: 1, isPublished: 1 });
 sparePartSchema.index({ vehicleType: 1, category: 1, availabilityStatus: 1, isPublished: 1, isArchived: 1 });
+sparePartSchema.index({ category: 1, price: 1, isPublished: 1, isArchived: 1 });
+sparePartSchema.index({ isPublished: 1, isArchived: 1, createdAt: -1 });
 sparePartSchema.index({ partName: 'text', partNumber: 'text', manufacturer: 'text', description: 'text' });
 sparePartSchema.index({ barcode: 1 }, { sparse: true });
 sparePartSchema.index({ manufacturerPartNumber: 1 }, { sparse: true });

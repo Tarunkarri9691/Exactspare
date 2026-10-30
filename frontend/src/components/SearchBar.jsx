@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { geocodeAddress } from '../services/api';
 import BarcodeScannerModal from './BarcodeScannerModal';
 import ImageSearchModal from './ImageSearchModal';
+import VoiceSearchModal from './VoiceSearchModal';
+import { useVehicle } from '../context/VehicleContext';
 import './SearchBar.css';
 
 const VEHICLE_OPTIONS = [
@@ -15,10 +17,11 @@ const VEHICLE_OPTIONS = [
 ];
 
 const SearchBar = ({ onSearch }) => {
+  const { vehicle } = useVehicle();
   const [partQuery, setPartQuery] = useState('');
-  const [vehicleType, setVehicleType] = useState('ALL');
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
+  const [vehicleType, setVehicleType] = useState(vehicle?.vehicleType || 'ALL');
+  const [make, setMake] = useState(vehicle?.make || '');
+  const [model, setModel] = useState(vehicle?.model || '');
   const [locationInput, setLocationInput] = useState('');
   const [coords, setCoords] = useState(null); // { latitude, longitude }
   const [radiusKm, setRadiusKm] = useState(25);
@@ -27,7 +30,19 @@ const SearchBar = ({ onSearch }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [showImageSearchModal, setShowImageSearchModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const navigate = useNavigate();
+
+  // Sync with global vehicle selection if changed
+  React.useEffect(() => {
+    if (vehicle) {
+      if (vehicle?.vehicleType && vehicle.vehicleType !== 'ALL') {
+        setVehicleType(vehicle.vehicleType);
+      }
+      if (vehicle?.make) setMake(vehicle.make);
+      if (vehicle?.model) setModel(vehicle.model);
+    }
+  }, [vehicle]);
 
   // Handle GPS location request
   const handleUseGPS = () => {
@@ -137,6 +152,15 @@ const SearchBar = ({ onSearch }) => {
                 value={partQuery}
                 onChange={(e) => setPartQuery(e.target.value)}
               />
+              <button
+                type="button"
+                className="btn-input-mic"
+                onClick={() => setShowVoiceModal(true)}
+                title="Search using your voice"
+                aria-label="Activate voice search"
+              >
+                🎙️
+              </button>
             </div>
           </div>
 
@@ -245,6 +269,21 @@ const SearchBar = ({ onSearch }) => {
               </svg>
               <span>🖼️ Search by Image</span>
             </button>
+
+            <button
+              type="button"
+              className="btn-secondary-action"
+              onClick={() => setShowVoiceModal(true)}
+              title="Speak part name"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+              <span>🎙️ Voice Search</span>
+            </button>
           </div>
 
           {coords && (
@@ -329,6 +368,25 @@ const SearchBar = ({ onSearch }) => {
         onSelectPart={(part) => {
           setShowImageSearchModal(false);
           navigate(`/parts/${part._id}`);
+        }}
+      />
+
+      {/* Voice Search Dialog */}
+      <VoiceSearchModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        onSearch={(text) => {
+          setPartQuery(text);
+          const params = new URLSearchParams();
+          params.set('q', text);
+          if (vehicleType && vehicleType !== 'ALL') params.set('vehicleType', vehicleType);
+          if (make.trim()) params.set('make', make.trim());
+          if (model.trim()) params.set('model', model.trim());
+          if (onSearch) {
+            onSearch(Object.fromEntries(params.entries()));
+          } else {
+            navigate(`/parts?${params.toString()}`);
+          }
         }}
       />
     </div>

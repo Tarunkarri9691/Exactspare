@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompare } from '../context/CompareContext';
-import { useCart } from '../context/CartContext';
-import { compareProducts } from '../services/api';
+import { compareProducts, getImageUrl } from '../services/api';
 import './ProductCompareModal.css';
 
 const ProductCompareModal = () => {
@@ -16,10 +15,9 @@ const ProductCompareModal = () => {
     closeCompareModal
   } = useCompare();
 
-  const { addToCart } = useCart();
   const [comparedData, setComparedData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cartAlert, setCartAlert] = useState('');
+  const [actionAlert, setActionAlert] = useState('');
 
   // Fetch verified comparison from server when modal opens or items change
   useEffect(() => {
@@ -39,17 +37,6 @@ const ProductCompareModal = () => {
 
     fetchComparison();
   }, [isCompareModalOpen, compareItems.length]);
-
-  const handleAddToCart = async (product) => {
-    const res = await addToCart(product._id, 1);
-    if (res.success) {
-      setCartAlert(`Added "${product.partName}" to cart!`);
-      setTimeout(() => setCartAlert(''), 3000);
-    } else {
-      setCartAlert(res.error || 'Failed to add to cart');
-      setTimeout(() => setCartAlert(''), 3000);
-    }
-  };
 
   if (compareCount === 0) return null;
 
@@ -120,9 +107,9 @@ const ProductCompareModal = () => {
 
             {/* Modal Body */}
             <div className="modal-body compare-modal-body">
-              {cartAlert && (
+              {actionAlert && (
                 <div className="compare-alert">
-                  {cartAlert}
+                  {actionAlert}
                 </div>
               )}
 
@@ -160,7 +147,7 @@ const ProductCompareModal = () => {
                                 <div className="product-col-img-wrap">
                                   {p.image ? (
                                     <img
-                                      src={`http://localhost:5000${p.image}`}
+                                      src={getImageUrl(p.image)}
                                       alt={p.partName}
                                       className="product-col-img"
                                       onError={(e) => {
@@ -302,24 +289,28 @@ const ProductCompareModal = () => {
 
                       {/* Purchase Actions */}
                       <tr className="actions-row">
-                        <td className="feature-label">Purchase & Details</td>
+                        <td className="feature-label">Store Availability & Details</td>
                         {productsToDisplay.map((p) => (
                           <td key={p._id} className="action-cell">
-                            <div className="compare-cell-actions">
-                              <button
-                                className="btn btn-primary btn-sm btn-block"
-                                onClick={() => handleAddToCart(p)}
-                                disabled={p.stockQuantity <= 0}
-                              >
-                                🛒 Add to Cart
-                              </button>
+                            <div className="compare-cell-actions" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <Link
                                 to={`/parts/${p._id}`}
-                                className="btn btn-outline btn-sm btn-block"
+                                className="btn btn-primary btn-sm btn-block"
                                 onClick={closeCompareModal}
+                                style={{ textDecoration: 'none', textAlign: 'center' }}
                               >
                                 View Details
                               </Link>
+                              {p.shopId && (
+                                <Link
+                                  to={`/shops/${p.shopId}`}
+                                  className="btn btn-outline btn-sm btn-block"
+                                  onClick={closeCompareModal}
+                                  style={{ textDecoration: 'none', textAlign: 'center' }}
+                                >
+                                  View Store
+                                </Link>
+                              )}
                             </div>
                           </td>
                         ))}

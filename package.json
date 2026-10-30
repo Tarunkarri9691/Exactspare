@@ -1,0 +1,11 @@
+{
+  "name": "exactspare",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EXACTSPARE - Vehicle Spare Parts Finder Platform",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run dev"
+  }
+}

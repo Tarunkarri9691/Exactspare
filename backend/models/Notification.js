@@ -25,6 +25,15 @@ const notificationSchema = new mongoose.Schema(
         'APPLICATION_APPROVED',
         'APPLICATION_REJECTED',
         'CORRECTION_REQUESTED',
+        'PAYMENT_PENDING_VERIFICATION',
+        'PAYMENT_VERIFIED',
+        'PAYMENT_REJECTED',
+        'SUBSCRIPTION_PENDING_VERIFICATION',
+        'SUBSCRIPTION_PENDING_ADMIN',
+        'SUBSCRIPTION_ACTIVATED',
+        'SUBSCRIPTION_REJECTED',
+        'SUBSCRIPTION_EXPIRING',
+        'SUBSCRIPTION_EXPIRED',
         'ORDER_PLACED',
         'ORDER_CONFIRMED',
         'ORDER_PROCESSING',
@@ -39,6 +48,16 @@ const notificationSchema = new mongoose.Schema(
         'SHOP_STATUS_UPDATED',
         'ACCOUNT_STATUS_UPDATED',
         'LISTING_MODERATED',
+        'SUPPORT_TICKET_REPLY',
+        'SUPPORT_TICKET_STATUS',
+        'ORDER_TRACKING_UPDATE',
+        'PART_ADDED',
+        'PART_UPDATED',
+        'PART_PUBLISHED',
+        'PART_UNPUBLISHED',
+        'PART_LOW_STOCK',
+        'PART_OUT_OF_STOCK',
+        'CUSTOMER_ENQUIRY',
         'SYSTEM'
       ],
       default: 'SYSTEM'
@@ -55,8 +74,18 @@ const notificationSchema = new mongoose.Schema(
       default: null,
       index: true
     },
+    relatedPartId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SparePart',
+      default: null,
+      index: true
+    },
     relatedId: {
       type: mongoose.Schema.Types.ObjectId,
+      default: null
+    },
+    notificationKey: {
+      type: String,
       default: null
     },
     isRead: {
@@ -72,6 +101,7 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ recipientId: 1, isRead: 1 });
 notificationSchema.index({ recipientId: 1, createdAt: -1 });
+notificationSchema.index({ notificationKey: 1 }, { sparse: true });
 
 const Notification = mongoose.model('Notification', notificationSchema);
 

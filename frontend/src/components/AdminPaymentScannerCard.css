@@ -1,0 +1,500 @@
+.admin-payment-scanner-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(234, 88, 12, 0.35);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 20px rgba(234, 88, 12, 0.15);
+  margin-bottom: 24px;
+  color: #f8fafc;
+}
+
+.scanner-card-header {
+  margin-bottom: 20px;
+}
+
+.scanner-header-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.scanner-badge-fast {
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scanner-badge-direct {
+  background: rgba(30, 58, 138, 0.8);
+  color: #bfdbfe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.scanner-badge-no-wait {
+  background: rgba(22, 101, 52, 0.8);
+  color: #bbf7d0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.scanner-card-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+}
+
+.scanner-card-subtitle {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.scanner-card-subtitle strong {
+  color: #fdba74;
+}
+
+.scanner-card-body-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 28px;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .scanner-card-body-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.scanner-display-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.scanner-frame {
+  position: relative;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-qr-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.scanner-qr-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+}
+
+.scanner-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #ea580c;
+  border-style: solid;
+}
+
+.scanner-corner.top-left {
+  top: -3px;
+  left: -3px;
+  border-width: 3px 0 0 3px;
+}
+
+.scanner-corner.top-right {
+  top: -3px;
+  right: -3px;
+  border-width: 3px 3px 0 0;
+}
+
+.scanner-corner.bottom-left {
+  bottom: -3px;
+  left: -3px;
+  border-width: 0 0 3px 3px;
+}
+
+.scanner-corner.bottom-right {
+  bottom: -3px;
+  right: -3px;
+  border-width: 0 3px 3px 0;
+}
+
+.scanner-amount-tag {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(234, 88, 12, 0.15);
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  padding: 6px 14px;
+  border-radius: 9999px;
+}
+
+.amount-label {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.amount-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffedd5;
+}
+
+.scanner-supported-apps {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+.scanner-action-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scanner-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ea580c;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.step-item strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+  margin-bottom: 2px;
+}
+
+.step-item p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.payee-detail-row {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.payee-upi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.payee-upi-row code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.copy-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.scanner-utr-form {
+  margin-top: 8px;
+}
+
+.scanner-utr-form .form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.direct-pay-action-box {
+  margin-top: 14px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.direct-pay-summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  background: rgba(30, 41, 59, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 600px) {
+  .direct-pay-summary-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-lbl {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.summary-val {
+  font-size: 0.95rem;
+  color: #ffffff;
+}
+
+.price-val {
+  color: #fdba74;
+  font-size: 1.15rem;
+}
+
+.summary-tag {
+  display: inline-block;
+  background: rgba(22, 101, 52, 0.6);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #86efac;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.scanner-error-text {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+.activate-portal-btn {
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.scanner-success-box {
+  background: rgba(22, 101, 52, 0.25);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.success-check-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 1.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+}
+
+.scanner-success-box h3 {
+  font-size: 1.3rem;
+  color: #86efac;
+  margin: 0 0 6px 0;
+}
+
+.scanner-success-box p {
+  color: #cbd5e1;
+  margin: 0 0 8px 0;
+}
+
+.redirect-note {
+  font-size: 0.85rem;
+  color: #94a3b8 !important;
+}
+
+.scanner-card-loading {
+  padding: 30px;
+  text-align: center;
+  background: #0f172a;
+  border-radius: 12px;
+  color: #94a3b8;
+}
+
+.scanner-spinner, .btn-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* One-Tap UPI App Launch Buttons */
+.upi-app-button-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.upi-app-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(30, 41, 59, 0.9);
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.upi-app-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.app-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-phonepe { background: #6739b7; box-shadow: 0 0 6px #6739b7; }
+.phonepe-btn:hover {
+  background: #5f259f;
+  border-color: #a77cd6;
+  color: #ffffff;
+}
+
+.dot-paytm { background: #00baf2; box-shadow: 0 0 6px #00baf2; }
+.paytm-btn:hover {
+  background: #0087b7;
+  border-color: #6ee7b7;
+  color: #ffffff;
+}
+
+.dot-gpay { background: #34a853; box-shadow: 0 0 6px #34a853; }
+.gpay-btn:hover {
+  background: #1a73e8;
+  border-color: #93c5fd;
+  color: #ffffff;
+}
+
+.dot-navi { background: #00d09c; box-shadow: 0 0 6px #00d09c; }
+.navi-btn:hover {
+  background: #00a87a;
+  border-color: #6ee7b7;
+  color: #ffffff;
+}
+
+.dot-bhim { background: #ea580c; box-shadow: 0 0 6px #ea580c; }
+.bhim-btn:hover {
+  background: #ea580c;
+  border-color: #fdba74;
+  color: #ffffff;
+}
+
+.upi-launch-toast {
+  background: rgba(22, 101, 52, 0.4);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #86efac;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+

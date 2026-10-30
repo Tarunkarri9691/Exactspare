@@ -11,6 +11,10 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'exactspare_super_secret_jwt_key_change_in_production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173',
+  corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   cookieDomain: process.env.COOKIE_DOMAIN || undefined,
   paymentGateway: {
     enabled: process.env.PAYMENT_GATEWAY_ENABLED === 'true',
@@ -21,6 +25,14 @@ export const config = {
     geminiApiKey: process.env.GEMINI_API_KEY || '',
     openAiApiKey: process.env.OPENAI_API_KEY || '',
     model: process.env.AI_MODEL || ''
+  },
+  email: {
+    smtpHost: process.env.SMTP_HOST || '',
+    smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
+    smtpSecure: process.env.SMTP_SECURE === 'true',
+    smtpUser: process.env.SMTP_USER || '',
+    smtpPass: process.env.SMTP_PASS || '',
+    fromAddress: process.env.EMAIL_FROM || process.env.SMTP_FROM || 'EXACTSPARE <no-reply@exactspare.com>'
   }
 };
 

@@ -1,12 +1,48 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { upgradeToOwnerApi } from '../services/api';
 import './UnauthorizedPage.css';
 
 const UnauthorizedPage = () => {
-  const { user } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const location = useLocation();
-  const requiredRoles = location.state?.requiredRoles || [];
+  const navigate = useNavigate();
+  const requiredRoles = location.state?.requiredRoles || ['OWNER'];
+
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState('');
+
+  const isCustomerNeedingOwner = user?.role === 'CUSTOMER' && requiredRoles.includes('OWNER');
+
+  const handleSwitchToOwner = async () => {
+    try {
+      setSwitching(true);
+      setSwitchError('');
+      const res = await upgradeToOwnerApi();
+      if (res.success && res.data?.user) {
+        if (updateUser) {
+          updateUser(res.data.user);
+        }
+        navigate('/owner/dashboard', { replace: true });
+      } else {
+        setSwitchError(res.error || 'Failed to switch account role to Shop Owner.');
+      }
+    } catch {
+      setSwitchError('Network error while switching account role.');
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const handleLogoutAndLogin = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch {
+      navigate('/login', { replace: true });
+    }
+  };
 
   const getDashboardLink = () => {
     if (!user) return '/login';
@@ -33,7 +69,9 @@ const UnauthorizedPage = () => {
           <h1 className="unauthorized-title">Role Authorization Restricted</h1>
 
           <p className="unauthorized-desc">
-            You do not have the required permissions to access this page or endpoint on EXACTSPARE.
+            {isCustomerNeedingOwner
+              ? 'You are currently signed in with a Customer account, but the Shop Owner Portal requires a Shop Owner role.'
+              : 'You do not have the required permissions to access this page or endpoint on EXACTSPARE.'}
           </p>
 
           <div className="role-context-box">
@@ -51,20 +89,68 @@ const UnauthorizedPage = () => {
             )}
           </div>
 
-          <div className="unauthorized-actions">
-            {user ? (
-              <Link to={getDashboardLink()} className="btn btn-primary">
-                Return to My {user.role} Dashboard
+          {switchError && (
+            <div className="error-notice-card" style={{ marginBottom: '16px', color: '#dc2626', background: '#fef2f2', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}>
+              ⚠️ {switchError}
+            </div>
+          )}
+
+          {isCustomerNeedingOwner ? (
+            <div className="unauthorized-actions-stacked" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '13px 20px', fontSize: '1rem', fontWeight: 700 }}
+                onClick={handleSwitchToOwner}
+                disabled={switching}
+                id="switch-to-owner-btn"
+              >
+                {switching ? 'Switching to Shop Owner...' : '⚡ Switch This Account to Shop Owner'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ padding: '12px 18px', fontWeight: 600 }}
+                onClick={handleLogoutAndLogin}
+                id="signout-to-owner-login-btn"
+              >
+                🚪 Sign Out & Log In with Another Account
+              </button>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '6px' }}>
+                <Link to={getDashboardLink()} className="btn btn-sm btn-ghost" style={{ textDecoration: 'underline', color: '#64748b' }}>
+                  Return to Customer Dashboard
+                </Link>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <Link to="/" className="btn btn-sm btn-ghost" style={{ textDecoration: 'underline', color: '#64748b' }}>
+                  Back to Home
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="unauthorized-actions">
+              {user ? (
+                <Link to={getDashboardLink()} className="btn btn-primary">
+                  Return to My {user.role} Dashboard
+                </Link>
+              ) : (
+                <Link to="/login" className="btn btn-primary">
+                  Log In with Appropriate Role
+                </Link>
+              )}
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={handleLogoutAndLogin}
+              >
+                Sign Out & Switch Account
+              </button>
+              <Link to="/" className="btn btn-outline">
+                Back to Home
               </Link>
-            ) : (
-              <Link to="/login" className="btn btn-primary">
-                Log In with Appropriate Role
-              </Link>
-            )}
-            <Link to="/" className="btn btn-outline">
-              Back to Home
-            </Link>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

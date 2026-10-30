@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import AdminNav from '../components/AdminNav';
 import { 
   fetchAdminApplications, 
-  fetchAdminApplicationById, 
-  decideAdminApplication 
+  fetchAdminApplicationById
 } from '../services/api';
 import LocationPickerMap from '../components/LocationPickerMap';
 import './AdminApplicationsPage.css';
@@ -21,16 +21,10 @@ const AdminApplicationsPage = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Detail / Review Modal State
+  // Detail Modal State
   const [selectedApp, setSelectedApp] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-
-  // Decision Modal State
-  const [decisionType, setDecisionType] = useState(null); // 'APPROVE' | 'REJECT' | 'REQUEST_CORRECTIONS'
-  const [decisionReason, setDecisionReason] = useState('');
-  const [submittingDecision, setSubmittingDecision] = useState(false);
-  const [decisionError, setDecisionError] = useState('');
   const [pageNotice, setPageNotice] = useState('');
 
   const loadApplications = async () => {
@@ -76,9 +70,6 @@ const AdminApplicationsPage = () => {
     try {
       setDetailModalOpen(true);
       setLoadingDetail(true);
-      setDecisionType(null);
-      setDecisionReason('');
-      setDecisionError('');
       setPageNotice('');
 
       const res = await fetchAdminApplicationById(appId);
@@ -96,58 +87,19 @@ const AdminApplicationsPage = () => {
     }
   };
 
-  const handleProcessDecision = async () => {
-    if (!selectedApp) return;
-    setDecisionError('');
-
-    if (decisionType === 'REJECT' && !decisionReason.trim()) {
-      setDecisionError('Please enter a specific reason for rejection.');
-      return;
-    }
-
-    if (decisionType === 'REQUEST_CORRECTIONS' && !decisionReason.trim()) {
-      setDecisionError('Please enter the instructions explaining what corrections are required.');
-      return;
-    }
-
-    try {
-      setSubmittingDecision(true);
-      const payload = {
-        decision: decisionType,
-        reason: decisionType === 'REJECT' ? decisionReason.trim() : undefined,
-        correctionMessage: decisionType === 'REQUEST_CORRECTIONS' ? decisionReason.trim() : undefined
-      };
-
-      const res = await decideAdminApplication(selectedApp._id, payload);
-      if (res.success) {
-        setPageNotice(`Application for "${selectedApp.shopName}" successfully updated to ${decisionType}!`);
-        setDetailModalOpen(false);
-        setSelectedApp(null);
-        setDecisionType(null);
-        setDecisionReason('');
-        loadApplications();
-      } else {
-        setDecisionError(res.error || 'Failed to execute review decision.');
-      }
-    } catch {
-      setDecisionError('An unexpected server error occurred.');
-    } finally {
-      setSubmittingDecision(false);
-    }
-  };
-
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'APPROVED': return <span className="badge badge-success">Approved</span>;
-      case 'PENDING': return <span className="badge badge-orange">Pending Review</span>;
+      case 'APPROVED': return <span className="badge badge-success">✓ Directly Approved</span>;
+      case 'PENDING': return <span className="badge badge-success">✓ Registered</span>;
       case 'NEEDS_CORRECTION': return <span className="badge badge-warning">Needs Correction</span>;
       case 'REJECTED': return <span className="badge badge-danger">Rejected</span>;
-      default: return <span className="badge badge-navy">{status}</span>;
+      default: return <span className="badge badge-navy">✓ Registered</span>;
     }
   };
 
   return (
     <div className="admin-apps-page-root">
+      <AdminNav />
       <div className="container admin-apps-container">
         {/* Navigation Breadcrumb / Header */}
         <div className="admin-page-header">
@@ -155,12 +107,28 @@ const AdminApplicationsPage = () => {
             <Link to="/admin/dashboard" className="back-link">
               ← Return to Admin Dashboard
             </Link>
-            <span className="badge badge-info">Module 3 • Compliance Center</span>
+            <span className="badge badge-info">Registry • Merchant Onboarding</span>
           </div>
-          <h1>Shop Owner Application Reviews & Governance</h1>
+          <h1>Shop Owner Applications Registry</h1>
           <p>
-            Verify physical storefront photos, GPS coordinates, and business credentials before approving merchants to sell on EXACTSPARE.
+            Registry of all merchant applications. Shop owner basic details are directly registered and approved. Subscriptions to unlock and activate stores are managed in the Subscriptions Portal.
           </p>
+        </div>
+
+        {/* Quick Link Banner to Subscriptions Portal */}
+        <div className="admin-sub-portal-banner">
+          <div className="banner-info-left">
+            <span className="banner-icon-badge">💳</span>
+            <div>
+              <h3>Merchant Subscriptions & Store Activation</h3>
+              <p>
+                When a shop owner completes basic registration, they submit a subscription payment. Review, accept, or reject merchant subscription requests in the Subscriptions Portal to unlock their stores.
+              </p>
+            </div>
+          </div>
+          <Link to="/admin/subscriptions" className="btn btn-primary" id="open-subs-portal-link">
+            Open Subscriptions Portal →
+          </Link>
         </div>
 
         {/* Real-Time Stats Overview Cards */}
@@ -170,26 +138,8 @@ const AdminApplicationsPage = () => {
             className={`stat-pill-btn ${selectedStatus === '' ? 'active' : ''}`}
             onClick={() => { setSelectedStatus(''); setCurrentPage(1); }}
           >
-            <span className="pill-label">All Applications</span>
+            <span className="pill-label">All Registered Applications</span>
             <span className="pill-count">{stats.totalAll ?? 0}</span>
-          </button>
-
-          <button 
-            type="button" 
-            className={`stat-pill-btn pending-pill ${selectedStatus === 'PENDING' ? 'active' : ''}`}
-            onClick={() => { setSelectedStatus('PENDING'); setCurrentPage(1); }}
-          >
-            <span className="pill-label">Pending Verification</span>
-            <span className="pill-count">{stats.pending ?? 0}</span>
-          </button>
-
-          <button 
-            type="button" 
-            className={`stat-pill-btn warning-pill ${selectedStatus === 'NEEDS_CORRECTION' ? 'active' : ''}`}
-            onClick={() => { setSelectedStatus('NEEDS_CORRECTION'); setCurrentPage(1); }}
-          >
-            <span className="pill-label">Needs Correction</span>
-            <span className="pill-count">{stats.needsCorrection ?? 0}</span>
           </button>
 
           <button 
@@ -197,17 +147,8 @@ const AdminApplicationsPage = () => {
             className={`stat-pill-btn success-pill ${selectedStatus === 'APPROVED' ? 'active' : ''}`}
             onClick={() => { setSelectedStatus('APPROVED'); setCurrentPage(1); }}
           >
-            <span className="pill-label">Approved & Active</span>
-            <span className="pill-count">{stats.approved ?? 0}</span>
-          </button>
-
-          <button 
-            type="button" 
-            className={`stat-pill-btn danger-pill ${selectedStatus === 'REJECTED' ? 'active' : ''}`}
-            onClick={() => { setSelectedStatus('REJECTED'); setCurrentPage(1); }}
-          >
-            <span className="pill-label">Rejected</span>
-            <span className="pill-count">{stats.rejected ?? 0}</span>
+            <span className="pill-label">Directly Approved</span>
+            <span className="pill-count">{stats.approved ?? stats.totalAll ?? 0}</span>
           </button>
         </div>
 
@@ -267,15 +208,15 @@ const AdminApplicationsPage = () => {
                 <th>Owner Details</th>
                 <th>Location</th>
                 <th>Category</th>
-                <th>Status</th>
-                <th>Submitted</th>
+                <th>Application Status</th>
+                <th>Registered Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="text-center-cell">Loading applications from MongoDB...</td>
+                  <td colSpan="7" className="text-center-cell">Loading registered applications...</td>
                 </tr>
               ) : applications.length === 0 ? (
                 <tr>
@@ -285,15 +226,15 @@ const AdminApplicationsPage = () => {
                 </tr>
               ) : (
                 applications.map((app) => (
-                  <tr key={app._id} className={`status-row-${app.status.toLowerCase()}`}>
+                  <tr key={app._id} className="status-row-approved">
                     <td>
                       <strong className="shop-title-text">{app.shopName}</strong>
-                      <div className="app-id-sub">ID: {app._id.slice(-6)}</div>
+                      <div className="app-id-sub">Ref: #EXS-{app._id.slice(-6).toUpperCase()}</div>
                     </td>
                     <td>
-                      <div>{app.ownerFullName}</div>
+                      <div style={{ fontWeight: 600 }}>{app.ownerFullName}</div>
                       <div className="owner-email-sub">{app.businessEmail}</div>
-                      <div className="owner-phone-sub">{app.ownerPhone}</div>
+                      <div className="owner-phone-sub">📞 {app.ownerPhone}</div>
                     </td>
                     <td>
                       <div>{app.city}, {app.state}</div>
@@ -302,7 +243,12 @@ const AdminApplicationsPage = () => {
                     <td>
                       <span className="tech-chip">{app.shopCategory}</span>
                     </td>
-                    <td>{getStatusBadge(app.status)}</td>
+                    <td>
+                      {getStatusBadge(app.status)}
+                      <div style={{ marginTop: '4px', fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+                        Auto-approved upon registration
+                      </div>
+                    </td>
                     <td>
                       <div>{new Date(app.submittedAt || app.createdAt).toLocaleDateString()}</div>
                       <div className="time-sub">{new Date(app.submittedAt || app.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
@@ -313,7 +259,7 @@ const AdminApplicationsPage = () => {
                         className="btn btn-outline review-btn"
                         onClick={() => handleOpenReview(app._id)}
                       >
-                        Inspect & Review
+                        Inspect Details
                       </button>
                     </td>
                   </tr>
@@ -351,7 +297,7 @@ const AdminApplicationsPage = () => {
         </div>
       </div>
 
-      {/* DETAIL & REVIEW MODAL */}
+      {/* DETAIL INSPECT MODAL */}
       {detailModalOpen && (
         <div className="modal-backdrop" onClick={() => setDetailModalOpen(false)}>
           <div className="modal-card review-modal-card fade-in" onClick={(e) => e.stopPropagation()}>
@@ -379,6 +325,25 @@ const AdminApplicationsPage = () => {
                 </div>
 
                 <div className="modal-scrollable-body">
+                  {/* Status Banner */}
+                  <div className="decision-resolved-box" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <strong style={{ color: '#166534', fontSize: '1rem', display: 'block' }}>✓ Directly Registered & Approved</strong>
+                        <p style={{ margin: '4px 0 0', color: '#15803d', fontSize: '0.9rem' }}>
+                          Basic store details are approved. Storefront usage and part listing are unlocked once the owner's subscription is accepted in the Subscriptions Portal.
+                        </p>
+                      </div>
+                      <Link
+                        to={`/admin/subscriptions?search=${encodeURIComponent(selectedApp.ownerFullName || selectedApp.shopName)}`}
+                        className="btn btn-primary btn-sm"
+                        style={{ whiteSpace: 'nowrap' }}
+                      >
+                        Check Subscriptions Portal →
+                      </Link>
+                    </div>
+                  </div>
+
                   {/* Shop & Owner Summary Grid */}
                   <div className="review-meta-grid">
                     <div className="meta-card">
@@ -386,6 +351,7 @@ const AdminApplicationsPage = () => {
                       <p><strong>Name:</strong> {selectedApp.ownerFullName}</p>
                       <p><strong>Phone:</strong> {selectedApp.ownerPhone}</p>
                       <p><strong>Email:</strong> {selectedApp.businessEmail}</p>
+                      <p><strong>Role:</strong> {selectedApp.ownerBusinessRole || 'Proprietor'}</p>
                       <p><strong>Account ID:</strong> {selectedApp.ownerId?._id || selectedApp.ownerId}</p>
                     </div>
 
@@ -394,6 +360,7 @@ const AdminApplicationsPage = () => {
                       <p><strong>Category:</strong> {selectedApp.shopCategory}</p>
                       <p><strong>Address:</strong> {selectedApp.addressLine}, {selectedApp.city}, {selectedApp.state} - {selectedApp.postalCode}</p>
                       <p><strong>Hours:</strong> {selectedApp.openingHours}</p>
+                      <p><strong>Years in Business:</strong> {selectedApp.yearsInBusiness || '1+'}</p>
                     </div>
                   </div>
 
@@ -405,7 +372,7 @@ const AdminApplicationsPage = () => {
 
                   {/* Geolocation Map */}
                   <div className="review-map-box">
-                    <h4>Physical Location Verification (OpenStreetMap)</h4>
+                    <h4>Physical Location (OpenStreetMap)</h4>
                     <p className="subtext">
                       Coordinates: Latitude {selectedApp.latitude}, Longitude {selectedApp.longitude}
                     </p>
@@ -422,15 +389,15 @@ const AdminApplicationsPage = () => {
                     <h4>Storefront Photographs ({selectedApp.shopImagePaths?.length || 0})</h4>
                     {selectedApp.shopImagePaths?.length > 0 ? (
                       <div className="admin-photo-gallery">
-                        {selectedApp.shopImagePaths.map((path, idx) => (
+                        {selectedApp.shopImagePaths.map((imgPath, idx) => (
                           <a
                             key={idx}
-                            href={`http://localhost:5000/${path}`}
+                            href={`http://localhost:5000/${imgPath}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="gallery-item"
                           >
-                            <img src={`http://localhost:5000/${path}`} alt="Storefront" />
+                            <img src={`http://localhost:5000/${imgPath}`} alt="Storefront" />
                             <span>View Full Image ↗</span>
                           </a>
                         ))}
@@ -444,7 +411,7 @@ const AdminApplicationsPage = () => {
                   <div className="review-documents-box">
                     <h4>Private Verification Documents ({selectedApp.verificationDocumentPaths?.length || 0})</h4>
                     <p className="subtext">
-                      Trade licenses, GST filings, and municipal permits. Confidential; restricted strictly to platform administrators.
+                      Trade licenses, GST filings, and municipal permits uploaded by merchant.
                     </p>
 
                     {selectedApp.verificationDocumentPaths?.length > 0 ? (
@@ -456,7 +423,7 @@ const AdminApplicationsPage = () => {
                               <span className="doc-icon">📑</span>
                               <div className="doc-details">
                                 <span className="doc-filename">{filename}</span>
-                                <span className="doc-storage-note">Secure Local Storage Path: {docPath}</span>
+                                <span className="doc-storage-note">Secure Path: {docPath}</span>
                               </div>
                               <a
                                 href={`http://localhost:5000/api/shop-applications/${selectedApp._id}/documents/${filename}`}
@@ -464,7 +431,7 @@ const AdminApplicationsPage = () => {
                                 rel="noopener noreferrer"
                                 className="btn btn-outline inspect-doc-btn"
                               >
-                                View Private Document ↗
+                                View Document ↗
                               </a>
                             </div>
                           );
@@ -478,7 +445,7 @@ const AdminApplicationsPage = () => {
                   {/* Audit History Timeline */}
                   {selectedApp.statusHistory?.length > 0 && (
                     <div className="review-history-box">
-                      <h4>Audit History & Status Timeline</h4>
+                      <h4>Registration Timeline</h4>
                       <div className="audit-timeline">
                         {selectedApp.statusHistory.map((h, i) => (
                           <div key={i} className="timeline-item">
@@ -490,101 +457,22 @@ const AdminApplicationsPage = () => {
                       </div>
                     </div>
                   )}
+                </div>
 
-                  {/* Action Decision Form */}
-                  {selectedApp.status === 'PENDING' && (
-                    <div className="decision-action-box">
-                      <h4>Administrative Review Action</h4>
-                      <p className="subtext">
-                        Choose an action below to either verify the merchant, request necessary corrections, or reject the application.
-                      </p>
-
-                      <div className="decision-button-toggles">
-                        <button
-                          type="button"
-                          className={`btn ${decisionType === 'APPROVE' ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => { setDecisionType('APPROVE'); setDecisionError(''); }}
-                        >
-                          ✓ Approve Application
-                        </button>
-
-                        <button
-                          type="button"
-                          className={`btn ${decisionType === 'REQUEST_CORRECTIONS' ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => { setDecisionType('REQUEST_CORRECTIONS'); setDecisionError(''); }}
-                        >
-                          ⚠️ Request Corrections
-                        </button>
-
-                        <button
-                          type="button"
-                          className={`btn ${decisionType === 'REJECT' ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => { setDecisionType('REJECT'); setDecisionError(''); }}
-                        >
-                          ✕ Reject Application
-                        </button>
-                      </div>
-
-                      {decisionType && (
-                        <div className="decision-details-form fade-in">
-                          {decisionType === 'APPROVE' ? (
-                            <div className="approve-confirm-notice">
-                              <p>
-                                <strong>Ready to Approve:</strong> Approving will immediately create an active <strong>Shop</strong> record in MongoDB and publish the store for customer discovery. The owner will receive an approval notification.
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="reason-input-group">
-                              <label htmlFor="decisionReason">
-                                {decisionType === 'REJECT' ? 'Reason for Rejection *' : 'Instructions for Required Corrections *'}
-                              </label>
-                              <textarea
-                                id="decisionReason"
-                                className="form-textarea"
-                                rows="3"
-                                placeholder={decisionType === 'REJECT' ? 'Provide clear reason for rejection...' : 'Specify what photos, address details, or documents need to be corrected...'}
-                                value={decisionReason}
-                                onChange={(e) => setDecisionReason(e.target.value)}
-                                required
-                              />
-                            </div>
-                          )}
-
-                          {decisionError && (
-                            <div className="auth-alert error-alert">
-                              <span>{decisionError}</span>
-                            </div>
-                          )}
-
-                          <div className="decision-submit-row">
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => setDecisionType(null)}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn ${decisionType === 'REJECT' ? 'btn-danger' : 'btn-primary'}`}
-                              disabled={submittingDecision}
-                              onClick={handleProcessDecision}
-                            >
-                              {submittingDecision ? 'Executing Decision...' : `Confirm ${decisionType}`}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {selectedApp.status !== 'PENDING' && (
-                    <div className="decision-resolved-box">
-                      <p>
-                        This application is in <strong>{selectedApp.status}</strong> status. No pending review actions required.
-                      </p>
-                    </div>
-                  )}
+                <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setDetailModalOpen(false)}
+                  >
+                    Close
+                  </button>
+                  <Link 
+                    to={`/admin/subscriptions?search=${encodeURIComponent(selectedApp.ownerFullName || selectedApp.shopName)}`}
+                    className="btn btn-primary"
+                  >
+                    Manage Subscription in Subscriptions Portal →
+                  </Link>
                 </div>
               </>
             )}

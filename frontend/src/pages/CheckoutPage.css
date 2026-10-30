@@ -420,3 +420,20 @@
   color: var(--color-text-muted);
   margin-bottom: 20px;
 }
+
+@media (max-width: 600px) {
+  .checkout-page-container {
+    padding: var(--spacing-md) 0 var(--spacing-2xl);
+  }
+  .checkout-card {
+    padding: 16px 14px;
+    border-radius: var(--radius-md);
+  }
+  .checkout-page-title {
+    font-size: 1.5rem;
+  }
+  .payment-radio-option {
+    padding: 12px;
+  }
+}
+

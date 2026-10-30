@@ -1,6 +1,9 @@
 import ShopApplication from '../models/ShopApplication.js';
 import Shop from '../models/Shop.js';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
+import PaymentConfig from '../models/PaymentConfig.js';
+import emailService from '../services/emailService.js';
 import { recordAdminAuditLog } from './adminManagementController.js';
 import { logger } from '../utils/logger.js';
 
@@ -133,7 +136,8 @@ export const decideApplication = async (req, res, next) => {
     }
 
     // Validate allowed decisions
-    if (!['APPROVE', 'REJECT', 'REQUEST_CORRECTIONS'].includes(decision)) {
+    const normalizedDecision = decision === 'NEEDS_CORRECTION' ? 'REQUEST_CORRECTIONS' : decision;
+    if (!['APPROVE', 'REJECT', 'REQUEST_CORRECTIONS'].includes(normalizedDecision)) {
       return res.status(400).json({
         status: 'error',
         statusCode: 400,
@@ -157,6 +161,31 @@ export const decideApplication = async (req, res, next) => {
 
     // DECISION: APPROVE
     if (decision === 'APPROVE') {
+      // Payment verification eligibility check
+      if (application.paymentStatus === 'PENDING_VERIFICATION') {
+        return res.status(400).json({
+          status: 'error',
+          statusCode: 400,
+          message: 'Cannot approve shop application: Registration fee payment is pending verification. Please reconcile and verify payment first before approving the shop.'
+        });
+      }
+
+      if (application.paymentStatus === 'PAYMENT_FAILED') {
+        return res.status(400).json({
+          status: 'error',
+          statusCode: 400,
+          message: 'Cannot approve shop application: Registration fee payment verification failed. Valid payment is required before approval.'
+        });
+      }
+
+      if (application.paymentStatus === 'UNPAID' && (application.paymentUtr || req.body.requirePayment === true)) {
+        return res.status(400).json({
+          status: 'error',
+          statusCode: 400,
+          message: 'Cannot approve shop application: Registration fee payment is unpaid.'
+        });
+      }
+
       application.status = 'APPROVED';
       application.rejectionReason = '';
       application.correctionMessage = '';
@@ -212,6 +241,18 @@ export const decideApplication = async (req, res, next) => {
       });
 
       await application.save();
+
+      // Dispatch approval email to shop owner
+      User.findById(application.ownerId).then((owner) => {
+        if (owner && owner.email) {
+          emailService.sendShopApplicationStatusEmail(
+            owner.email,
+            owner.name || application.businessInfo?.ownerName || 'Merchant',
+            application.shopName,
+            'APPROVED'
+          ).catch((e) => logger.warn(`Failed to dispatch shop approval email: ${e.message}`));
+        }
+      }).catch(() => {});
 
       // Record Audit Log
       await recordAdminAuditLog({
@@ -271,6 +312,19 @@ export const decideApplication = async (req, res, next) => {
 
       await application.save();
 
+      // Dispatch rejection email to shop owner
+      User.findById(application.ownerId).then((owner) => {
+        if (owner && owner.email) {
+          emailService.sendShopApplicationStatusEmail(
+            owner.email,
+            owner.name || application.businessInfo?.ownerName || 'Merchant',
+            application.shopName,
+            'REJECTED',
+            reason.trim()
+          ).catch((e) => logger.warn(`Failed to dispatch shop rejection email: ${e.message}`));
+        }
+      }).catch(() => {});
+
       // Record Audit Log
       await recordAdminAuditLog({
         adminId: req.user._id,
@@ -294,7 +348,7 @@ export const decideApplication = async (req, res, next) => {
     }
 
     // DECISION: REQUEST_CORRECTIONS
-    if (decision === 'REQUEST_CORRECTIONS') {
+    if (normalizedDecision === 'REQUEST_CORRECTIONS') {
       if (!correctionMessage || correctionMessage.trim().length === 0) {
         return res.status(400).json({
           status: 'error',
@@ -322,6 +376,21 @@ export const decideApplication = async (req, res, next) => {
       });
 
       await application.save();
+
+      // Record Audit Log
+      await recordAdminAuditLog({
+        adminId: req.user._id,
+        action: 'SHOP_APPLICATION_CORRECTIONS_REQUESTED',
+        entityType: 'SHOP_APPLICATION',
+        entityId: application._id,
+        reason: correctionMessage.trim(),
+        metadata: {
+          shopName: application.shopName,
+          ownerId: application.ownerId,
+          correctionMessage: correctionMessage.trim()
+        }
+      });
+
       logger.info(`Shop application ${application._id} flagged as NEEDS_CORRECTION by admin ${req.user.email}`);
 
       return res.status(200).json({
@@ -335,3 +404,250 @@ export const decideApplication = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Get Admin Payment Scanner Details and Direct Activation Metrics
+ * @route GET /api/admin/shop-applications/scanner/config
+ */
+export const getAdminScannerConfig = async (req, res, next) => {
+  try {
+    let config = await PaymentConfig.findOne({ key: 'ADMIN_SCANNER' });
+    if (!config) {
+      config = await PaymentConfig.create({
+        key: 'ADMIN_SCANNER',
+        upiId: 'exactspare.merchant@upi',
+        payeeName: 'EXACTSPARE Merchant Services',
+        registrationFee: 499,
+        instructions: 'Scan this Admin QR code with Google Pay, PhonePe, Paytm, or BHIM. Enter your 12-digit UTR/Reference number below to activate your Shop Owner Portal immediately without waiting for admin approval.',
+        isActive: true
+      });
+    }
+
+    const [paidApplications, totalPaidVolume] = await Promise.all([
+      ShopApplication.find({ paymentStatus: 'PAID' })
+        .populate('ownerId', 'name email phone')
+        .sort({ paidAt: -1 })
+        .limit(20),
+      ShopApplication.aggregate([
+        { $match: { paymentStatus: 'PAID' } },
+        { $group: { _id: null, totalAmount: { $sum: '$paymentAmount' }, count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const upiUri = `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=${encodeURIComponent(config.payeeName)}&am=${config.registrationFee}&cu=INR&tn=${encodeURIComponent('Shop Registration Onboarding')}`;
+
+    res.status(200).json({
+      status: 'ok',
+      config: {
+        upiId: config.upiId,
+        payeeName: config.payeeName,
+        registrationFee: config.registrationFee,
+        instructions: config.instructions,
+        upiUri,
+        qrCodeImage: config.qrCodeImage || null,
+        isActive: config.isActive,
+        updatedAt: config.updatedAt
+      },
+      stats: {
+        totalPaidCount: totalPaidVolume[0]?.count || 0,
+        totalPaidAmount: totalPaidVolume[0]?.totalAmount || 0
+      },
+      recentPayments: paidApplications
+    });
+  } catch (error) {
+    logger.error('Error fetching admin scanner config:', error);
+    next(error);
+  }
+};
+
+/**
+ * Update Admin Payment Scanner Configuration
+ * @route PUT /api/admin/shop-applications/scanner/config
+ */
+export const updateAdminScannerConfig = async (req, res, next) => {
+  try {
+    const { upiId, payeeName, registrationFee, instructions, qrCodeImage, isActive } = req.body;
+
+    let config = await PaymentConfig.findOne({ key: 'ADMIN_SCANNER' });
+    if (!config) {
+      config = new PaymentConfig({ key: 'ADMIN_SCANNER' });
+    }
+
+    if (upiId) config.upiId = upiId.trim();
+    if (payeeName) config.payeeName = payeeName.trim();
+    if (registrationFee !== undefined && !isNaN(Number(registrationFee))) {
+      config.registrationFee = Math.max(0, Number(registrationFee));
+    }
+    if (instructions) config.instructions = instructions.trim();
+    if (qrCodeImage !== undefined) config.qrCodeImage = qrCodeImage;
+    if (isActive !== undefined) config.isActive = Boolean(isActive);
+    config.updatedBy = req.user._id;
+
+    await config.save();
+
+    await recordAdminAuditLog({
+      adminId: req.user._id,
+      action: 'UPDATE_PAYMENT_SCANNER',
+      targetType: 'SYSTEM_CONFIG',
+      targetId: config._id,
+      details: { upiId: config.upiId, registrationFee: config.registrationFee }
+    });
+
+    res.status(200).json({
+      status: 'ok',
+      message: 'Admin Payment Scanner configuration updated successfully.',
+      config
+    });
+  } catch (error) {
+    logger.error('Error updating admin scanner config:', error);
+    next(error);
+  }
+};
+
+/**
+ * Administrator reconciles & confirms genuine payment receipt
+ * @route PATCH /api/admin/shop-applications/:id/verify-payment
+ */
+export const verifyApplicationPayment = async (req, res, next) => {
+  try {
+    const application = await ShopApplication.findById(req.params.id);
+    if (!application) {
+      return res.status(404).json({
+        status: 'error',
+        statusCode: 404,
+        message: 'Shop application not found.'
+      });
+    }
+
+    // Idempotent: already marked PAID
+    if (application.paymentStatus === 'PAID') {
+      return res.status(200).json({
+        status: 'ok',
+        message: 'Payment is already verified and marked as PAID.',
+        application
+      });
+    }
+
+    const now = new Date();
+    application.paymentStatus = 'PAID';
+    application.paidAt = application.paidAt || now;
+    application.paymentVerifiedBy = req.user._id;
+    application.paymentVerifiedAt = now;
+    application.paymentRejectionReason = '';
+
+    application.statusHistory.push({
+      status: application.status,
+      changedBy: req.user._id,
+      note: `Registration payment verified and reconciled by administrator (${req.user.name || req.user.email}). Amount: ₹${application.paymentAmount}, UTR: ${application.paymentUtr || 'N/A'}`,
+      timestamp: now
+    });
+
+    await application.save();
+
+    // In-app notification to owner
+    await Notification.create({
+      recipientId: application.ownerId,
+      title: 'Registration Payment Verified',
+      message: `Your registration payment of ₹${application.paymentAmount} (UTR: ${application.paymentUtr || 'Confirmed'}) has been verified by the administrator. Your application is now queued for final compliance review.`,
+      type: 'PAYMENT_VERIFIED',
+      relatedId: application._id
+    });
+
+    await recordAdminAuditLog({
+      adminId: req.user._id,
+      action: 'SHOP_APPLICATION_PAYMENT_VERIFIED',
+      entityType: 'SHOP_APPLICATION',
+      entityId: application._id,
+      reason: 'Payment verified and reconciled with bank records',
+      metadata: {
+        shopName: application.shopName,
+        paymentUtr: application.paymentUtr,
+        paymentAmount: application.paymentAmount
+      }
+    });
+
+    logger.info(`Payment verified for shop application ${application._id} by admin ${req.user.email}`);
+
+    res.status(200).json({
+      status: 'ok',
+      message: `Payment of ₹${application.paymentAmount} for "${application.shopName}" has been successfully verified.`,
+      application
+    });
+  } catch (error) {
+    logger.error('Error verifying application payment:', error);
+    next(error);
+  }
+};
+
+/**
+ * Administrator rejects payment reference (e.g. counterfeit UTR or unreceived funds)
+ * @route PATCH /api/admin/shop-applications/:id/reject-payment
+ */
+export const rejectApplicationPayment = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({
+        status: 'error',
+        statusCode: 400,
+        message: 'A clear reason for rejecting the payment reference is required.'
+      });
+    }
+
+    const application = await ShopApplication.findById(req.params.id);
+    if (!application) {
+      return res.status(404).json({
+        status: 'error',
+        statusCode: 404,
+        message: 'Shop application not found.'
+      });
+    }
+
+    const now = new Date();
+    application.paymentStatus = 'PAYMENT_FAILED';
+    application.paymentRejectionReason = reason.trim();
+
+    application.statusHistory.push({
+      status: application.status,
+      changedBy: req.user._id,
+      note: `Payment reference rejected by administrator: ${reason.trim()}`,
+      timestamp: now
+    });
+
+    await application.save();
+
+    // Notification to owner
+    await Notification.create({
+      recipientId: application.ownerId,
+      title: 'Payment Verification Failed',
+      message: `Payment verification could not be confirmed: ${reason.trim()}. Please submit a valid payment reference or contact support.`,
+      type: 'PAYMENT_FAILED',
+      relatedId: application._id
+    });
+
+    await recordAdminAuditLog({
+      adminId: req.user._id,
+      action: 'SHOP_APPLICATION_PAYMENT_REJECTED',
+      entityType: 'SHOP_APPLICATION',
+      entityId: application._id,
+      reason: reason.trim(),
+      metadata: {
+        shopName: application.shopName,
+        paymentUtr: application.paymentUtr
+      }
+    });
+
+    logger.info(`Payment rejected for shop application ${application._id} by admin ${req.user.email}`);
+
+    res.status(200).json({
+      status: 'ok',
+      message: `Payment reference for "${application.shopName}" marked as failed.`,
+      application
+    });
+  } catch (error) {
+    logger.error('Error rejecting application payment:', error);
+    next(error);
+  }
+};
+
+

@@ -1,144 +1,193 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import React, { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { CompareProvider } from './context/CompareContext';
+import { VehicleProvider } from './context/VehicleContext';
 import MainLayout from './layouts/MainLayout';
+import OwnerLayout from './layouts/OwnerLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import RouteLoadingFallback from './components/RouteLoadingFallback';
 
-// Module 1 & 2 Pages
+// Primary Eager-Loaded Entry Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import CustomerRegisterPage from './pages/CustomerRegisterPage';
-import OwnerRegisterPage from './pages/OwnerRegisterPage';
-import CustomerDashboardPage from './pages/CustomerDashboardPage';
-import OwnerDashboardPage from './pages/OwnerDashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import UnauthorizedPage from './pages/UnauthorizedPage';
-import NotFoundPage from './pages/NotFoundPage';
 
-// Module 3 Pages
-import ShopApplicationPage from './pages/ShopApplicationPage';
-import AdminApplicationsPage from './pages/AdminApplicationsPage';
+// Auth Gate: Opens Sign-In first if not signed in; after sign-in, opens the pages
+const RootRouteGate = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <RouteLoadingFallback />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return <HomePage />;
+};
 
-// Module 4 Pages: Shop Management & Inventory
-import OwnerInventoryPage from './pages/OwnerInventoryPage';
-import AddEditPartPage from './pages/AddEditPartPage';
-import OwnerShopPage from './pages/OwnerShopPage';
-import PublicShopsPage from './pages/PublicShopsPage';
-import ShopDetailsPage from './pages/ShopDetailsPage';
-import PublicPartsPage from './pages/PublicPartsPage';
-import PartDetailsPage from './pages/PartDetailsPage';
+// Route-Split Lazy-Loaded Pages for Optimized Initial Bundle Size
+const CustomerRegisterPage = lazy(() => import('./pages/CustomerRegisterPage'));
+const OwnerRegisterPage = lazy(() => import('./pages/OwnerRegisterPage'));
+const CustomerDashboardPage = lazy(() => import('./pages/CustomerDashboardPage'));
+const CustomerSettingsPage = lazy(() => import('./pages/CustomerSettingsPage'));
+const OwnerDashboardPage = lazy(() => import('./pages/OwnerDashboardPage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
-// Module 6 Pages: Shopping Cart, Checkout, Customer Orders & Shop Owner Orders
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import OrderConfirmationPage from './pages/OrderConfirmationPage';
-import CustomerOrdersPage from './pages/CustomerOrdersPage';
-import OrderDetailsPage from './pages/OrderDetailsPage';
-import OwnerOrdersPage from './pages/OwnerOrdersPage';
+// Merchant Onboarding & Catalog
+const ShopApplicationPage = lazy(() => import('./pages/ShopApplicationPage'));
+const AdminApplicationsPage = lazy(() => import('./pages/AdminApplicationsPage'));
+const OwnerInventoryPage = lazy(() => import('./pages/OwnerInventoryPage'));
+const AddEditPartPage = lazy(() => import('./pages/AddEditPartPage'));
+const OwnerShopPage = lazy(() => import('./pages/OwnerShopPage'));
+const PublicShopsPage = lazy(() => import('./pages/PublicShopsPage'));
+const ShopDetailsPage = lazy(() => import('./pages/ShopDetailsPage'));
+const ShopDirectionsPage = lazy(() => import('./pages/ShopDirectionsPage'));
+const PublicPartsPage = lazy(() => import('./pages/PublicPartsPage'));
+const PartDetailsPage = lazy(() => import('./pages/PartDetailsPage'));
 
-// Module 7 Pages: Wishlist & Notifications
-import WishlistPage from './pages/WishlistPage';
-import NotificationsPage from './pages/NotificationsPage';
+// Owner Operations
+const OwnerOrdersPage = lazy(() => import('./pages/OwnerOrdersPage'));
+const OwnerEnquiriesPage = lazy(() => import('./pages/OwnerEnquiriesPage'));
+const OwnerLocationPage = lazy(() => import('./pages/OwnerLocationPage'));
+const OwnerSettingsPage = lazy(() => import('./pages/OwnerSettingsPage'));
+const OwnerPaymentMethodPage = lazy(() => import('./pages/OwnerPaymentMethodPage'));
 
-// Module 8 Pages: Admin Analytics, Reports, Moderation & Platform Management
-import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
-import AdminShopsPage from './pages/AdminShopsPage';
-import AdminUsersPage from './pages/AdminUsersPage';
-import AdminPartsModerationPage from './pages/AdminPartsModerationPage';
-import AdminReviewModerationPage from './pages/AdminReviewModerationPage';
-import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
+// Admin Management, Analytics & Governance
+const AdminSubscriptionsPage = lazy(() => import('./pages/AdminSubscriptionsPage'));
 
-// Module 10 Pages: Comparison
-import ComparePage from './pages/ComparePage';
+// Account, Wishlist, Notifications & Support
+const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const CustomerEnquiriesPage = lazy(() => import('./pages/CustomerEnquiriesPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const ComparePage = lazy(() => import('./pages/ComparePage'));
+const CustomerSupportPage = lazy(() => import('./pages/CustomerSupportPage'));
+const TicketDetailsPage = lazy(() => import('./pages/TicketDetailsPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
+const EmailVerificationPage = lazy(() => import('./pages/EmailVerificationPage'));
+
+// Admin Management, Analytics & Governance
+const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage'));
+const AdminShopsPage = lazy(() => import('./pages/AdminShopsPage'));
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
+const AdminPartsModerationPage = lazy(() => import('./pages/AdminPartsModerationPage'));
+const AdminReviewModerationPage = lazy(() => import('./pages/AdminReviewModerationPage'));
+const AdminAuditLogsPage = lazy(() => import('./pages/AdminAuditLogsPage'));
+const AdminSupportPage = lazy(() => import('./pages/AdminSupportPage'));
+const AdminTrustSafetyPage = lazy(() => import('./pages/AdminTrustSafetyPage'));
 
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <NotificationProvider>
-            <CompareProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<MainLayout />}>
-                    {/* Public Routes */}
-                    <Route index element={<HomePage />} />
-                    <Route path="login" element={<LoginPage />} />
-                    <Route path="register" element={<CustomerRegisterPage />} />
-                    <Route path="register-owner" element={<OwnerRegisterPage />} />
-                    <Route path="shop-owner" element={<OwnerRegisterPage />} />
-                    <Route path="unauthorized" element={<UnauthorizedPage />} />
+      <VehicleProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <NotificationProvider>
+              <CompareProvider>
+                <BrowserRouter>
+                  <Suspense fallback={<RouteLoadingFallback />}>
+                    <Routes>
+                      {/* Role-Protected Shop Owner Routes (Dedicated Owner Layout & Navigation) */}
+                      <Route element={<ProtectedRoute allowedRoles={['OWNER']} />}>
+                        <Route path="owner" element={<OwnerLayout />}>
+                          <Route index element={<Navigate to="/owner/dashboard" replace />} />
+                          <Route path="dashboard" element={<OwnerDashboardPage />} />
+                          <Route path="application" element={<ShopApplicationPage />} />
+                          <Route path="shop" element={<OwnerShopPage />} />
+                          <Route path="location" element={<OwnerLocationPage />} />
+                          <Route path="shop-location" element={<OwnerLocationPage />} />
+                          <Route path="inventory" element={<OwnerInventoryPage />} />
+                          <Route path="inventory/add" element={<AddEditPartPage />} />
+                          <Route path="inventory/new" element={<AddEditPartPage />} />
+                          <Route path="inventory/:id/edit" element={<AddEditPartPage />} />
+                          <Route path="enquiries" element={<OwnerEnquiriesPage />} />
+                          <Route path="notifications" element={<NotificationsPage />} />
+                          <Route path="settings" element={<OwnerSettingsPage />} />
+                          <Route path="orders" element={<OwnerOrdersPage />} />
+                          <Route path="subscription" element={<OwnerPaymentMethodPage />} />
+                          <Route path="payment-method" element={<OwnerPaymentMethodPage />} />
+                          <Route path="payment" element={<OwnerPaymentMethodPage />} />
+                        </Route>
+                      </Route>
 
-                    {/* Module 10: Product Comparison */}
-                    <Route path="compare" element={<ComparePage />} />
+                      <Route path="/" element={<MainLayout />}>
+                        {/* Root Route: Opens Sign-In First if not signed in */}
+                        <Route index element={<RootRouteGate />} />
 
-                    {/* Public Shop & Inventory Discovery (Module 4 & 5) */}
-                    <Route path="shops" element={<PublicShopsPage />} />
-                    <Route path="shops/:id" element={<ShopDetailsPage />} />
-                    <Route path="parts" element={<PublicPartsPage />} />
-                    <Route path="parts/:id" element={<PartDetailsPage />} />
+                        {/* Public Auth & Registration Routes */}
+                        <Route path="login" element={<LoginPage />} />
+                        <Route path="register" element={<CustomerRegisterPage />} />
+                        <Route path="register-owner" element={<OwnerRegisterPage />} />
+                        <Route path="shop-owner" element={<OwnerRegisterPage />} />
+                        <Route path="unauthorized" element={<UnauthorizedPage />} />
+                        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                        <Route path="reset-password" element={<ResetPasswordPage />} />
+                        <Route path="verify-email" element={<EmailVerificationPage />} />
+                        <Route path="shop-application" element={<ShopApplicationPage />} />
 
-                    {/* Module 6: Shopping Cart */}
-                    <Route path="cart" element={<CartPage />} />
+                        {/* Authenticated Marketplace Pages (Must sign in first to open pages) */}
+                        <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'OWNER', 'ADMIN']} />}>
+                          <Route path="compare" element={<ComparePage />} />
+                          <Route path="shops" element={<PublicShopsPage />} />
+                          <Route path="shops/:id" element={<ShopDetailsPage />} />
+                          <Route path="shops/:id/directions" element={<ShopDirectionsPage />} />
+                          <Route path="parts" element={<PublicPartsPage />} />
+                          <Route path="parts/:id" element={<PartDetailsPage />} />
+                          <Route path="cart" element={<Navigate to="/parts" replace />} />
+                          <Route path="notifications" element={<NotificationsPage />} />
+                          <Route path="support" element={<CustomerSupportPage />} />
+                          <Route path="support/tickets/:ticketId" element={<TicketDetailsPage />} />
+                          <Route path="orders/:orderId/track" element={<Navigate to="/parts" replace />} />
+                          <Route path="orders/:orderId/tracking" element={<Navigate to="/parts" replace />} />
+                          <Route path="account/security" element={<ChangePasswordPage />} />
+                          <Route path="change-password" element={<ChangePasswordPage />} />
+                        </Route>
 
-                    {/* Authenticated Notifications (All roles) */}
-                    <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'OWNER', 'ADMIN']} />}>
-                      <Route path="notifications" element={<NotificationsPage />} />
-                    </Route>
+                        {/* Role-Protected Customer Routes */}
+                        <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
+                          <Route path="wishlist" element={<WishlistPage />} />
+                          <Route path="customer/dashboard" element={<CustomerDashboardPage />} />
+                          <Route path="customer/enquiries" element={<CustomerEnquiriesPage />} />
+                          <Route path="enquiries" element={<CustomerEnquiriesPage />} />
+                          <Route path="settings" element={<CustomerSettingsPage />} />
+                          <Route path="customer/settings" element={<CustomerSettingsPage />} />
+                          <Route path="checkout" element={<Navigate to="/parts" replace />} />
+                          <Route path="orders" element={<Navigate to="/parts" replace />} />
+                          <Route path="orders/:orderId" element={<Navigate to="/parts" replace />} />
+                          <Route path="orders/:orderId/confirmation" element={<Navigate to="/parts" replace />} />
+                        </Route>
 
-                  {/* Role-Protected Customer Routes (Module 6 & 7) */}
-                  <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
-                    <Route path="wishlist" element={<WishlistPage />} />
-                    <Route path="customer/dashboard" element={<CustomerDashboardPage />} />
-                    <Route path="checkout" element={<CheckoutPage />} />
-                    <Route path="orders" element={<CustomerOrdersPage />} />
-                    <Route path="orders/:orderId" element={<OrderDetailsPage />} />
-                    <Route path="orders/:orderId/confirmation" element={<OrderConfirmationPage />} />
-                  </Route>
+                        {/* Role-Protected Administrator Routes */}
+                        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                          <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+                          <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
+                          <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
+                          <Route path="admin/applications" element={<AdminApplicationsPage />} />
+                          <Route path="admin/shops" element={<AdminShopsPage />} />
+                          <Route path="admin/users" element={<AdminUsersPage />} />
+                          <Route path="admin/moderation/parts" element={<AdminPartsModerationPage />} />
+                          <Route path="admin/moderation/reviews" element={<AdminReviewModerationPage />} />
+                          <Route path="admin/audit-logs" element={<AdminAuditLogsPage />} />
+                          <Route path="admin/support" element={<AdminSupportPage />} />
+                          <Route path="admin/trust-safety" element={<AdminTrustSafetyPage />} />
+                        </Route>
 
-                  {/* Role-Protected Shop Owner Routes (Module 3, 4 & 6) */}
-                  <Route element={<ProtectedRoute allowedRoles={['OWNER']} />}>
-                    <Route path="owner/dashboard" element={<OwnerDashboardPage />} />
-                    <Route path="owner/application" element={<ShopApplicationPage />} />
-                    <Route path="shop-application" element={<ShopApplicationPage />} />
-                    
-                    {/* Module 4: Inventory & Shop Management */}
-                    <Route path="owner/inventory" element={<OwnerInventoryPage />} />
-                    <Route path="owner/inventory/new" element={<AddEditPartPage />} />
-                    <Route path="owner/inventory/:id/edit" element={<AddEditPartPage />} />
-                    <Route path="owner/shop" element={<OwnerShopPage />} />
-
-                    {/* Module 6: Shop Owner Orders Fulfillment */}
-                    <Route path="owner/orders" element={<OwnerOrdersPage />} />
-                  </Route>
-
-                  {/* Role-Protected Administrator Routes */}
-                  <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                    <Route path="admin/dashboard" element={<AdminDashboardPage />} />
-                    <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
-                    <Route path="admin/applications" element={<AdminApplicationsPage />} />
-                    <Route path="admin/shops" element={<AdminShopsPage />} />
-                    <Route path="admin/users" element={<AdminUsersPage />} />
-                    <Route path="admin/moderation/parts" element={<AdminPartsModerationPage />} />
-                    <Route path="admin/moderation/reviews" element={<AdminReviewModerationPage />} />
-                    <Route path="admin/audit-logs" element={<AdminAuditLogsPage />} />
-                  </Route>
-
-                  {/* Catch-all 404 Route */}
-                  <Route path="*" element={<NotFoundPage />} />
-                </Route>
-              </Routes>
+                        {/* Catch-all 404 Route */}
+                        <Route path="*" element={<NotFoundPage />} />
+                      </Route>
+                    </Routes>
+                </Suspense>
               </BrowserRouter>
             </CompareProvider>
           </NotificationProvider>
         </WishlistProvider>
       </CartProvider>
-    </AuthProvider>
-  );
+    </VehicleProvider>
+  </AuthProvider>
+);
 }
 
 export default App;

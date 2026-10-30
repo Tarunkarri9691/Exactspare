@@ -25,7 +25,11 @@ const TEMP_DIR = path.join(BASE_UPLOADS_DIR, 'temp');
 // Configure Multer Disk Storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (file.fieldname === 'shopImages') {
+    if (
+      file.fieldname === 'shopImages' ||
+      file.fieldname === 'shopExteriorImage' ||
+      file.fieldname === 'shopInteriorImage'
+    ) {
       cb(null, SHOPS_DIR);
     } else if (file.fieldname === 'partImages' || file.fieldname === 'images') {
       cb(null, PARTS_DIR);
@@ -42,7 +46,11 @@ const storage = multer.diskStorage({
     const timestamp = Date.now();
     const cleanExt = path.extname(file.originalname).toLowerCase();
     let prefix = 'upload';
-    if (file.fieldname === 'shopImages') prefix = 'shop';
+    if (
+      file.fieldname === 'shopImages' ||
+      file.fieldname === 'shopExteriorImage' ||
+      file.fieldname === 'shopInteriorImage'
+    ) prefix = 'shop';
     else if (file.fieldname === 'partImages' || file.fieldname === 'images') prefix = 'part';
     else if (file.fieldname === 'verificationDocuments') prefix = 'doc';
     else if (file.fieldname === 'image' || file.fieldname === 'searchImage') prefix = 'search';
@@ -51,30 +59,33 @@ const storage = multer.diskStorage({
   }
 });
 
-// Strict MIME Type & Extension Filter
+// Strict MIME Type & Extension Filter (Supports any standard image format and documents)
 const fileFilter = (req, file, cb) => {
-  const allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp'];
-  const allowedDocMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+  const allowedImageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif', '.heic', '.heif'];
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (
     file.fieldname === 'shopImages' ||
+    file.fieldname === 'shopExteriorImage' ||
+    file.fieldname === 'shopInteriorImage' ||
     file.fieldname === 'partImages' ||
     file.fieldname === 'images' ||
     file.fieldname === 'image' ||
+    file.fieldname === 'partPhoto' ||
     file.fieldname === 'searchImage'
   ) {
-    if (allowedImageMimes.includes(file.mimetype) && ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+    if (file.mimetype.startsWith('image/') || allowedImageExts.includes(ext)) {
       return cb(null, true);
     }
-    return cb(new Error('Invalid image type. Only JPG, PNG, and WebP images are permitted.'), false);
+    return cb(new Error('Invalid image type. Please select a valid photo file (JPG, PNG, WebP, HEIC, etc.).'), false);
   }
 
   if (file.fieldname === 'verificationDocuments') {
-    if (allowedDocMimes.includes(file.mimetype) && ['.pdf', '.jpg', '.jpeg', '.png'].includes(ext)) {
+    const allowedDocExts = ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.avif'];
+    if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/') || allowedDocExts.includes(ext)) {
       return cb(null, true);
     }
-    return cb(new Error('Invalid document type. Only PDF, JPG, and PNG are allowed for business verification documents.'), false);
+    return cb(new Error('Invalid document type. Allowed types: PDF, JPG, PNG, WebP.'), false);
   }
 
   cb(new Error(`Unknown upload field: ${file.fieldname}`), false);
@@ -86,11 +97,13 @@ export const uploadShopApplicationFiles = multer({
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB per file
-    files: 8
+    files: 10
   }
 }).fields([
-  { name: 'shopImages', maxCount: 5 },
-  { name: 'verificationDocuments', maxCount: 3 }
+  { name: 'shopImages', maxCount: 8 },
+  { name: 'shopExteriorImage', maxCount: 1 },
+  { name: 'shopInteriorImage', maxCount: 1 },
+  { name: 'verificationDocuments', maxCount: 5 }
 ]);
 
 export const uploadPartImages = multer({
@@ -118,6 +131,24 @@ export const uploadSearchImage = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 }).single('image');
+
+export const uploadPartScan = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, PARTS_DIR);
+    },
+    filename: (req, file, cb) => {
+      const randomHex = crypto.randomBytes(8).toString('hex');
+      const cleanExt = path.extname(file.originalname).toLowerCase();
+      cb(null, `part-${Date.now()}-${randomHex}${cleanExt}`);
+    }
+  }),
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+}).single('partPhoto');
+
 
 /**
  * Safely delete an uploaded file by relative path without crashing

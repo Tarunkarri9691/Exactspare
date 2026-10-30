@@ -409,6 +409,57 @@ const AdminUsersPage = () => {
                         <span>📦 Total Platform Orders: <strong>{userDetails.ordersCount}</strong></span>
                       </div>
                     )}
+
+                    {viewUser.role === 'OWNER' && (
+                      <div className="owner-association-section" style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0a192f', marginBottom: '10px' }}>
+                          🏬 Associated Shop & Onboarding Status
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>Active Storefront</span>
+                            {userDetails?.shop ? (
+                              <div style={{ marginTop: '4px' }}>
+                                <strong style={{ fontSize: '0.9rem', color: '#0a192f' }}>{userDetails.shop.name}</strong>
+                                <div style={{ marginTop: '4px', display: 'flex', gap: '6px' }}>
+                                  <span className={`badge ${userDetails.shop.isActive ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.72rem' }}>
+                                    {userDetails.shop.isActive ? 'Active' : 'Deactivated'}
+                                  </span>
+                                  <span className={`badge ${userDetails.shop.isApproved ? 'badge-info' : 'badge-warning'}`} style={{ fontSize: '0.72rem' }}>
+                                    {userDetails.shop.isApproved ? 'Approved' : 'Unapproved'}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', display: 'block', marginTop: '4px' }}>
+                                No active shop created
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>Application Record</span>
+                            {userDetails?.application ? (
+                              <div style={{ marginTop: '4px' }}>
+                                <strong style={{ fontSize: '0.9rem', color: '#0a192f' }}>{userDetails.application.shopName}</strong>
+                                <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                  <span className={`badge ${userDetails.application.status === 'APPROVED' ? 'badge-success' : userDetails.application.status === 'REJECTED' ? 'badge-danger' : userDetails.application.status === 'NEEDS_CORRECTION' ? 'badge-warning' : 'badge-orange'}`} style={{ fontSize: '0.72rem' }}>
+                                    {userDetails.application.status}
+                                  </span>
+                                  <span className={`badge ${userDetails.application.paymentStatus === 'PAID' ? 'badge-success' : 'badge-secondary'}`} style={{ fontSize: '0.72rem' }}>
+                                    Payment: {userDetails.application.paymentStatus || 'UNPAID'}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', display: 'block', marginTop: '4px' }}>
+                                No application submitted
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,0 +1,602 @@
+/* EXACTSPARE — Dedicated Owner Portal Layout Styles */
+
+.owner-layout-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-light, #f8fafc);
+  color: var(--color-navy-dark, #0f172a);
+}
+
+/* ==========================================================================
+   TOP HEADER
+   ========================================================================== */
+.owner-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border-bottom: 2px solid #ea580c;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25);
+}
+
+.owner-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  gap: 16px;
+}
+
+/* Brand & Portal Badge */
+.owner-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.owner-brand-link {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.owner-brand-link:hover {
+  opacity: 0.9;
+}
+
+.owner-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.owner-portal-badge-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.owner-portal-badge {
+  display: inline-block;
+  background: rgba(234, 88, 12, 0.18);
+  border: 1px solid #ea580c;
+  color: #ffedd5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.owner-status-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.pill-active {
+  background: rgba(22, 163, 74, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(22, 163, 74, 0.5);
+}
+
+.pill-pending {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.5);
+}
+
+.pill-correction {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+}
+
+.pill-rejected {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.pill-draft {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.pill-none {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.pill-loading {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+/* Store & Owner Identity */
+.owner-identity-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.owner-identity-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px 12px 4px 6px;
+  border-radius: 30px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.owner-identity-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.owner-avatar-frame {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.owner-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.owner-avatar-fallback {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.owner-identity-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.owner-shop-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-name-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-user-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: #cbd5e1;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-name-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-icon {
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Top Header Direct Logout Button */
+.owner-header-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.owner-header-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.26);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+.owner-header-logout-btn .logout-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.owner-header-logout-btn .logout-label {
+  line-height: 1;
+}
+
+/* Quick Notifications Bell */
+.owner-quick-notif-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.owner-quick-notif-btn:hover,
+.owner-quick-notif-btn.active {
+  background: rgba(234, 88, 12, 0.25);
+  border-color: #ea580c;
+  color: #ffedd5;
+}
+
+.owner-notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Toggle */
+.owner-mobile-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   DEDICATED OWNER NAVIGATION BAR
+   ========================================================================== */
+.owner-navbar {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+}
+
+.owner-nav-container {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.owner-nav-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 0;
+}
+
+.owner-nav-list::-webkit-scrollbar {
+  display: none;
+}
+
+.owner-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 6px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.owner-nav-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.owner-nav-link.active {
+  color: #ffffff;
+  background: #ea580c;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+}
+
+.nav-item-icon {
+  font-size: 0.95rem;
+}
+
+.nav-chip-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 2px;
+}
+
+.chip-warning {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.chip-pending {
+  background: #ca8a04;
+  color: #ffffff;
+}
+
+.chip-orange {
+  background: #ea580c;
+  color: #ffffff;
+}
+
+.owner-logout-link {
+  margin-left: auto;
+  color: #fca5a5;
+}
+
+.owner-logout-link:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   NESTED PAGES BACK BAR & BREADCRUMBS
+   ========================================================================== */
+.owner-back-bar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 0;
+}
+
+.owner-back-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.owner-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.owner-back-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #ea580c;
+}
+
+.owner-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.owner-crumb-link {
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.owner-crumb-link:hover {
+  color: #ea580c;
+  text-decoration: underline;
+}
+
+.owner-crumb-sep {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.owner-crumb-current {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   MAIN CONTENT AREA
+   ========================================================================== */
+.owner-main-content {
+  flex: 1;
+  padding: 24px 0 48px;
+}
+
+/* ==========================================================================
+   OWNER FOOTER
+   ========================================================================== */
+.owner-footer {
+  background: #0f172a;
+  color: #94a3b8;
+  border-top: 1px solid #1e293b;
+  padding: 16px 0;
+  font-size: 0.8rem;
+  margin-top: auto;
+}
+
+.owner-footer-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.owner-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-brand-title {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.footer-portal-subtitle {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (MOBILE & TABLET)
+   ========================================================================== */
+@media (max-width: 991px) {
+  .owner-mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .owner-identity-text {
+    display: none;
+  }
+
+  .owner-identity-card {
+    padding: 2px;
+    background: transparent;
+    border: none;
+  }
+
+  .owner-navbar {
+    display: none;
+  }
+
+  .owner-navbar.mobile-open {
+    display: block;
+    background: #0f172a;
+    border-top: 1px solid #334155;
+    padding: 12px 0 16px;
+    animation: ownerSlideDown 0.25s ease-out;
+  }
+
+  .owner-navbar.mobile-open .owner-nav-list {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .owner-navbar.mobile-open .owner-nav-link {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    border-radius: 8px;
+  }
+
+  .owner-navbar.mobile-open .owner-logout-link {
+    margin-left: 0;
+    margin-top: 8px;
+    border-top: 1px solid #334155;
+    padding-top: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .owner-portal-badge-wrap {
+    display: none;
+  }
+
+  .owner-header-logout-btn .logout-label {
+    display: none;
+  }
+
+  .owner-header-logout-btn {
+    padding: 8px 10px;
+    height: 38px;
+  }
+}
+
+@keyframes ownerSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

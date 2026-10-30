@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { getImageUrl } from '../services/api';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -179,7 +180,7 @@ const CartPage = () => {
                           <div className="cart-item-img-box">
                             {product.imagePath ? (
                               <img
-                                src={`http://localhost:5000${product.imagePath}`}
+                                src={getImageUrl(product.imagePath)}
                                 alt={product.partName}
                                 className="cart-item-thumb"
                                 onError={(e) => {
@@ -201,11 +202,11 @@ const CartPage = () => {
                               {product.partName}
                             </Link>
                             <div className="cart-item-tags">
-                              <span className="meta-tag part-num">Part #{product.partNumber}</span>
-                              {product.category && (
+                              <span className="meta-tag part-num">Part #{product?.partNumber || 'N/A'}</span>
+                              {product?.category && (
                                 <span className="meta-tag category-tag">{product.category}</span>
                               )}
-                              {product.vehicleType && (
+                              {product?.vehicleType && (
                                 <span className="meta-tag vehicle-tag">{product.vehicleType}</span>
                               )}
                             </div>

@@ -323,4 +323,135 @@ Respond STRICTLY with valid JSON in this exact format:
   };
 };
 
-export default { getAiProviderStatus, processAssistantMessage, analyzeImageForPart };
+const capitalizeWords = (str) => {
+  if (!str) return '';
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+/**
+ * Extract comprehensive spare part catalog fields from an uploaded photograph
+ * (Used by Shop Owner to auto-fill Part Name, SKU, Category, Brand, Specs, Pricing, etc.)
+ */
+export const extractPartDetailsFromImage = async ({ filePath, mimeType, originalName }) => {
+  const status = getAiProviderStatus();
+
+  // If Gemini Vision is configured, send the image securely to extract genuine suggestions
+  if (status.isConfigured && status.provider === 'gemini') {
+    try {
+      const imageBuffer = fs.readFileSync(filePath);
+      const base64Data = imageBuffer.toString('base64');
+      const apiKey = process.env.GEMINI_API_KEY;
+      const model = process.env.AI_MODEL || 'gemini-1.5-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const prompt = `You are an expert automotive spare parts recognition assistant.
+Analyze this spare part image or packaging label carefully.
+Determine if an automotive spare part, component, or specification label is genuinely identifiable.
+
+If the image is too blurry, unidentifiable, or not an automotive spare part, respond strictly with:
+{"recognized": false, "message": "Could not identify confidently from this image. Please enter the details manually."}
+
+If you can genuinely recognize the spare part or read its packaging/label, respond with valid JSON:
+{
+  "recognized": true,
+  "partName": "Descriptive commercial part name (e.g. Front Disc Brake Pad Set)",
+  "category": "Must be one of: Engine, Brakes, Transmission, Suspension, Electrical, Body & Panels, Steering, Exhaust, Lighting, Cooling, Fuel System, Maintenance & Fluids, Accessories, Other",
+  "subcategory": "Suggested subcategory or empty string",
+  "manufacturer": "Brand/manufacturer if clearly visible or OEM Standard",
+  "partNumber": "Part number or SKU reference if visible on label, or empty string",
+  "vehicleType": "Car or Bike or Scooter or Bicycle or Other",
+  "compatibleMakes": "Known vehicle makes if identifiable, or empty string",
+  "compatibleModels": "Known vehicle models if identifiable, or empty string",
+  "compatibleYears": "Known model years if identifiable, or empty string",
+  "condition": "NEW",
+  "description": "Suggested technical description based on visible component features"
+}
+
+IMPORTANT CONSTRAINTS:
+- Do NOT predict, calculate, or suggest any price or demand forecast. Price is strictly set manually by the store owner.
+- Do NOT invent or fabricate an exact part number or vehicle compatibility if it is not genuinely identifiable from the image.
+- Never claim the image alone proves exact compatibility or authenticity.`;
+
+      const payload = {
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType || 'image/jpeg',
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 600
+        }
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const resData = await response.json();
+        const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.recognized === false) {
+            return {
+              recognized: false,
+              isAiPowered: true,
+              message: parsed.message || 'Could not identify confidently from this image. Please enter the details manually.'
+            };
+          }
+
+          return {
+            recognized: true,
+            isAiPowered: true,
+            providerMode: 'gemini_vision',
+            partName: parsed.partName || '',
+            category: parsed.category || 'Engine',
+            subcategory: parsed.subcategory || '',
+            manufacturer: parsed.manufacturer || '',
+            partNumber: parsed.partNumber || '',
+            vehicleType: parsed.vehicleType || 'Car',
+            compatibleMakes: parsed.compatibleMakes || '',
+            compatibleModels: parsed.compatibleModels || '',
+            compatibleYears: parsed.compatibleYears || '',
+            condition: parsed.condition || 'NEW',
+            description: parsed.description || ''
+          };
+        }
+      }
+    } catch (err) {
+      logger.warn('Gemini vision part recognition failed:', err.message);
+    }
+  }
+
+  // Graceful fallback when AI is not configured or recognition is uncertain
+  return {
+    recognized: false,
+    isAiPowered: false,
+    isAiConfigured: status.isConfigured,
+    message: status.isConfigured
+      ? 'Could not identify confidently from this image. Please enter the information manually.'
+      : 'AI image recognition is not configured on this server. Manual entry is fully supported below.'
+  };
+};
+
+export default { getAiProviderStatus, processAssistantMessage, analyzeImageForPart, extractPartDetailsFromImage };
+

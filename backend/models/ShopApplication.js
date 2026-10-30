@@ -49,12 +49,31 @@ const shopApplicationSchema = new mongoose.Schema(
       required: [true, 'Owner contact phone is required'],
       trim: true
     },
+    alternatePhone: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    ownerBusinessRole: {
+      type: String,
+      default: 'Proprietor',
+      trim: true
+    },
+    businessPhone: {
+      type: String,
+      default: '',
+      trim: true
+    },
     businessEmail: {
       type: String,
       required: [true, 'Business email is required'],
       trim: true,
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid business email']
+    },
+    yearsInBusiness: {
+      type: Number,
+      default: 0
     },
     shopDescription: {
       type: String,
@@ -76,6 +95,11 @@ const shopApplicationSchema = new mongoose.Schema(
       required: [true, 'Shop address line is required'],
       trim: true
     },
+    locality: {
+      type: String,
+      default: '',
+      trim: true
+    },
     city: {
       type: String,
       required: [true, 'City is required'],
@@ -89,6 +113,11 @@ const shopApplicationSchema = new mongoose.Schema(
     postalCode: {
       type: String,
       required: [true, 'Postal code is required'],
+      trim: true
+    },
+    country: {
+      type: String,
+      default: 'India',
       trim: true
     },
     latitude: {
@@ -108,6 +137,14 @@ const shopApplicationSchema = new mongoose.Schema(
       required: [true, 'Opening hours are required'],
       default: 'Mon-Sat: 09:00 AM - 08:00 PM'
     },
+    shopExteriorImagePath: {
+      type: String,
+      default: ''
+    },
+    shopInteriorImagePath: {
+      type: String,
+      default: ''
+    },
     shopImagePaths: {
       type: [String],
       default: []
@@ -124,6 +161,46 @@ const shopApplicationSchema = new mongoose.Schema(
       },
       default: 'DRAFT',
       index: true
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['UNPAID', 'PENDING_VERIFICATION', 'PAID', 'PAYMENT_FAILED'],
+      default: 'UNPAID',
+      index: true
+    },
+    paymentMethod: {
+      type: String,
+      default: 'UPI_SCANNER'
+    },
+    paymentUtr: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    paymentAmount: {
+      type: Number,
+      default: 499
+    },
+    paidAt: {
+      type: Date,
+      default: null
+    },
+    paymentVerifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    paymentVerifiedAt: {
+      type: Date,
+      default: null
+    },
+    paymentRejectionReason: {
+      type: String,
+      default: ''
+    },
+    directActivated: {
+      type: Boolean,
+      default: false
     },
     rejectionReason: {
       type: String,

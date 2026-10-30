@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { fetchPublicShopById, fetchPublicParts } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import LocationPickerMap from '../components/LocationPickerMap';
+import ReportModal from '../components/ReportModal';
+import CustomerEnquiryModal from '../components/CustomerEnquiryModal';
 import './ShopDetailsPage.css';
 
 const ShopDetailsPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [shop, setShop] = useState(null);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
   // Parts filter within shop
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,10 +89,16 @@ const ShopDetailsPage = () => {
 
   // Client-side filtered parts
   const filteredParts = parts.filter((part) => {
-    const matchSearch = searchQuery.trim() === '' ||
-      part.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.partNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.category.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!part) return false;
+    const name = (part.partName || part.name || '').toLowerCase();
+    const pNum = (part.partNumber || '').toLowerCase();
+    const cat = (part.category || '').toLowerCase();
+    const sQuery = searchQuery.trim().toLowerCase();
+
+    const matchSearch = sQuery === '' ||
+      name.includes(sQuery) ||
+      pNum.includes(sQuery) ||
+      cat.includes(sQuery);
 
     const matchVehicle = selectedVehicleType === 'ALL' || part.vehicleType === selectedVehicleType;
     return matchSearch && matchVehicle;
@@ -131,27 +144,59 @@ const ShopDetailsPage = () => {
             </div>
 
             {/* Directions Action Row */}
-            <div className="hero-directions-action">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${shopLat},${shopLng}`}
-                target="_blank"
-                rel="noopener noreferrer"
+            <div className="hero-directions-action" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={() => {
+                  if (!user) {
+                    navigate('/login', { state: { from: `/shops/${id}` } });
+                    return;
+                  }
+                  setShowEnquiryModal(true);
+                }}
+                title="Send enquiry or message to shop owner"
+                id="shop-contact-btn"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>💬 Contact Shop / Send Enquiry</span>
+              </button>
+
+              <Link
+                to={`/shops/${shop._id}/directions`}
                 className="btn btn-primary btn-directions-hero"
+                id="btn-inapp-directions"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
                 </svg>
-                <span>Get Driving Directions (Google Maps)</span>
-              </a>
+                <span>Get Directions (In-App Map)</span>
+              </Link>
 
-              <a
-                href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=%3B${shopLat}%2C${shopLng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline btn-directions-osm"
+              {shopLat && shopLng && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${shopLat},${shopLng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-outline btn-directions-osm"
+                  title="Open external directions in Google Maps"
+                >
+                  <span>Google Maps ↗</span>
+                </a>
+              )}
+
+              <button
+                type="button"
+                className="btn btn-outline btn-report-shop"
+                onClick={() => setShowReportModal(true)}
+                title="Report unverified or unresponsive merchant"
+                style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#DC2626' }}
               >
-                <span>OpenStreetMap Directions</span>
-              </a>
+                <span>🚩 Report Store</span>
+              </button>
             </div>
           </div>
 
@@ -268,7 +313,7 @@ const ShopDetailsPage = () => {
                           </svg>
                         </div>
                       )}
-                      <span className="part-veh-tag">{part.vehicleType}</span>
+                      <span className="part-veh-tag">{part?.vehicleType || 'Any'}</span>
                     </div>
 
                     <div className="part-card-content">
@@ -301,6 +346,23 @@ const ShopDetailsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Module 17: Customer Shop Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="SHOP"
+        targetId={shop._id}
+        targetTitle={shop.name}
+        shopId={shop._id}
+      />
+
+      {/* Prompt 6: Customer Enquiry Modal */}
+      <CustomerEnquiryModal
+        isOpen={showEnquiryModal}
+        onClose={() => setShowEnquiryModal(false)}
+        shop={shop}
+      />
     </div>
   );
 };

@@ -92,7 +92,10 @@ const shopFulfillmentSchema = new mongoose.Schema(
       {
         status: { type: String, required: true },
         changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         note: { type: String, default: '' },
+        customerSafeMessage: { type: String, default: '' },
+        timestamp: { type: Date, default: Date.now },
         changedAt: { type: Date, default: Date.now }
       }
     ]
@@ -167,7 +170,10 @@ const orderSchema = new mongoose.Schema(
       {
         status: { type: String, required: true },
         changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         note: { type: String, default: '' },
+        customerSafeMessage: { type: String, default: '' },
+        timestamp: { type: Date, default: Date.now },
         changedAt: { type: Date, default: Date.now }
       }
     ],

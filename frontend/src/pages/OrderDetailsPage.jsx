@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { fetchOrderDetails, cancelCustomerOrder } from '../services/api';
+import { fetchOrderDetails, cancelCustomerOrder, getImageUrl } from '../services/api';
 import './OrderDetailsPage.css';
 
 const TIMELINE_STEPS = [
@@ -137,6 +137,15 @@ const OrderDetailsPage = () => {
             <span className={`status-badge-lg badge-${order.orderStatus.toLowerCase()}`}>
               {order.orderStatus.replace('_', ' ')}
             </span>
+            <Link to={`/orders/${order._id}/track`} className="btn btn-outline-navy btn-sm">
+              📍 Track Milestones
+            </Link>
+            <Link
+              to={`/support?orderId=${order._id}&category=Order&subject=${encodeURIComponent(`Inquiry for Order #${order.orderNumber}`)}`}
+              className="btn btn-outline-navy btn-sm"
+            >
+              💬 Get Support
+            </Link>
             {canCancel && (
               <button
                 type="button"
@@ -212,7 +221,7 @@ const OrderDetailsPage = () => {
                     <div className="item-thumb-box">
                       {item.imagePath ? (
                         <img
-                          src={`http://localhost:5000${item.imagePath}`}
+                          src={getImageUrl(item.imagePath)}
                           alt={item.partName}
                           className="item-thumb"
                           onError={(e) => {
@@ -234,9 +243,9 @@ const OrderDetailsPage = () => {
                     <div className="item-meta-col">
                       <h3 className="item-title">{item.partName}</h3>
                       <div className="item-specs-line">
-                        <span className="spec-badge">Part #{item.partNumber}</span>
-                        {item.manufacturer && <span className="spec-badge">{item.manufacturer}</span>}
-                        {item.vehicleType && <span className="spec-badge">{item.vehicleType}</span>}
+                        <span className="spec-badge">Part #{item?.partNumber}</span>
+                        {item?.manufacturer && <span className="spec-badge">{item.manufacturer}</span>}
+                        {item?.vehicleType && <span className="spec-badge">{item.vehicleType}</span>}
                       </div>
                       <div className="item-shop-info">
                         Fulfilled by: <strong>{item.shopName}</strong>

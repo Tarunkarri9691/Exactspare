@@ -5,6 +5,8 @@ import Cart from '../models/Cart.js';
 import SparePart from '../models/SparePart.js';
 import Shop from '../models/Shop.js';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
+import emailService from '../services/emailService.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -18,6 +20,43 @@ const VALID_STATUS_TRANSITIONS = {
   SHIPPED: ['DELIVERED'],
   DELIVERED: [],
   CANCELLED: []
+};
+
+/**
+ * Helper to dispatch notification once and prevent duplicate alerts
+ */
+export const sendOrderNotificationOnce = async ({
+  recipientId,
+  type,
+  title,
+  message,
+  relatedOrderId,
+  relatedShopId = null
+}) => {
+  try {
+    const existing = await Notification.findOne({
+      recipientId,
+      type,
+      relatedOrderId
+    });
+
+    if (existing) {
+      logger.info(`Duplicate notification suppressed: ${type} for order ${relatedOrderId} to user ${recipientId}`);
+      return existing;
+    }
+
+    return await Notification.create({
+      recipientId,
+      type,
+      title,
+      message,
+      relatedOrderId,
+      relatedShopId
+    });
+  } catch (err) {
+    logger.warn('Failed to dispatch order notification:', err.message);
+    return null;
+  }
 };
 
 /**
@@ -206,7 +245,10 @@ export const createOrder = async (req, res) => {
             {
               status: 'PLACED',
               changedBy: customerId,
+              updatedBy: customerId,
               note: 'Order placed by customer',
+              customerSafeMessage: 'Order placed and logged in our system.',
+              timestamp: new Date(),
               changedAt: new Date()
             }
           ]
@@ -250,7 +292,10 @@ export const createOrder = async (req, res) => {
         {
           status: 'PLACED',
           changedBy: customerId,
+          updatedBy: customerId,
           note: 'Order successfully created with Cash on Delivery',
+          customerSafeMessage: 'Order successfully created with Cash on Delivery',
+          timestamp: new Date(),
           changedAt: new Date()
         }
       ]
@@ -260,10 +305,10 @@ export const createOrder = async (req, res) => {
     cart.items = [];
     await cart.save();
 
-    // 10. Dispatch in-app notifications
+    // 10. Dispatch in-app notifications (deduplicated)
     try {
       // Notify Customer
-      await Notification.create({
+      await sendOrderNotificationOnce({
         recipientId: customerId,
         type: 'ORDER_PLACED',
         title: 'Order Placed Successfully',
@@ -273,7 +318,7 @@ export const createOrder = async (req, res) => {
 
       // Notify each involved shop owner
       for (const s of order.shops) {
-        await Notification.create({
+        await sendOrderNotificationOnce({
           recipientId: s.ownerId,
           type: 'NEW_ORDER_RECEIVED',
           title: 'New Order Received',
@@ -282,9 +327,17 @@ export const createOrder = async (req, res) => {
           relatedShopId: s.shopId
         });
       }
+
+      // Send Order Confirmation Email (failsafe, never throws)
+      if (req.user && req.user.email) {
+        emailService.sendOrderConfirmationEmail(order, req.user.email, req.user.name).catch((emErr) => {
+          logger.warn(`Failed to dispatch order confirmation email: ${emErr.message}`);
+        });
+      }
     } catch (notifErr) {
       logger.warn('Failed to dispatch order placement notification:', notifErr.message);
     }
+
 
     logger.info(`New order created: ${order.orderNumber} for customer ${customerId} (Total: ₹${totalAmount})`);
 
@@ -465,7 +518,10 @@ export const cancelOrder = async (req, res) => {
     order.statusHistory.push({
       status: 'CANCELLED',
       changedBy: req.user.id,
+      updatedBy: req.user.id,
       note: `Cancelled by customer: ${reason.trim()}`,
+      customerSafeMessage: `Order cancelled by customer. Reason: ${reason.trim()}`,
+      timestamp: new Date(),
       changedAt: new Date()
     });
 
@@ -475,16 +531,19 @@ export const cancelOrder = async (req, res) => {
       shop.statusHistory.push({
         status: 'CANCELLED',
         changedBy: req.user.id,
+        updatedBy: req.user.id,
         note: `Customer requested order cancellation`,
+        customerSafeMessage: `Order cancelled: ${reason.trim()}`,
+        timestamp: new Date(),
         changedAt: new Date()
       });
     }
 
     await order.save();
 
-    // Dispatch cancellation notifications
+    // Dispatch cancellation notifications (deduplicated)
     try {
-      await Notification.create({
+      await sendOrderNotificationOnce({
         recipientId: order.customerId,
         type: 'ORDER_CANCELLED',
         title: 'Order Cancelled',
@@ -493,7 +552,7 @@ export const cancelOrder = async (req, res) => {
       });
 
       for (const s of order.shops) {
-        await Notification.create({
+        await sendOrderNotificationOnce({
           recipientId: s.ownerId,
           type: 'ORDER_CANCELLED',
           title: 'Order Cancelled by Customer',
@@ -727,12 +786,26 @@ export const updateOwnerOrderStatus = async (req, res) => {
       });
     }
 
+    // Customer-safe description for each status milestone
+    const STATUS_MESSAGES = {
+      CONFIRMED: 'Order confirmed by shop partner. Inventory allocated.',
+      PROCESSING: 'Order is being processed and packaged.',
+      READY_FOR_DISPATCH: 'Order packaging completed. Ready for dispatch.',
+      SHIPPED: 'Order dispatched and handed over for delivery.',
+      DELIVERED: 'Order successfully delivered.'
+    };
+
+    const customerMessage = note.trim() || STATUS_MESSAGES[status] || `Fulfillment status updated to ${status}.`;
+
     // Update shop fulfillment status
     order.shops[shopIndex].fulfillmentStatus = status;
     order.shops[shopIndex].statusHistory.push({
       status,
       changedBy: ownerId,
+      updatedBy: ownerId,
       note: note.trim() || `Status updated to ${status} by shop owner`,
+      customerSafeMessage: customerMessage,
+      timestamp: new Date(),
       changedAt: new Date()
     });
 
@@ -756,27 +829,42 @@ export const updateOwnerOrderStatus = async (req, res) => {
       order.statusHistory.push({
         status: aggregatedStatus,
         changedBy: ownerId,
+        updatedBy: ownerId,
         note: `Order overall status updated to ${aggregatedStatus}`,
+        customerSafeMessage: STATUS_MESSAGES[aggregatedStatus] || `Overall order status progressed to ${aggregatedStatus}.`,
+        timestamp: new Date(),
         changedAt: new Date()
       });
     }
 
     await order.save();
 
-    // Dispatch status update notification to customer
+    // Dispatch status update notification to customer (deduplicated)
     try {
       const shopName = order.shops[shopIndex]?.shopName || 'Shop';
-      await Notification.create({
+      await sendOrderNotificationOnce({
         recipientId: order.customerId,
         type: `ORDER_${status}`,
-        title: `Order Update: ${status.replace('_', ' ')}`,
-        message: `Your order #${order.orderNumber} fulfillment status was updated to "${status.replace('_', ' ')}" by ${shopName}.`,
+        title: `Order Update: ${status.replace(/_/g, ' ')}`,
+        message: `Your order #${order.orderNumber} fulfillment status was updated to "${status.replace(/_/g, ' ')}" by ${shopName}.`,
         relatedOrderId: order._id,
         relatedShopId: order.shops[shopIndex]?.shopId
       });
+
+      // Send status update email to customer
+      User.findById(order.customerId)
+        .then((customer) => {
+          if (customer && customer.email) {
+            emailService.sendOrderStatusEmail(order, customer.email, customer.name, status).catch((err) => {
+              logger.warn(`Failed to dispatch order status email: ${err.message}`);
+            });
+          }
+        })
+        .catch(() => {});
     } catch (notifErr) {
       logger.warn('Failed to dispatch status update notification:', notifErr.message);
     }
+
 
     logger.info(`Owner ${ownerId} updated order ${order.orderNumber} to ${status}`);
 
@@ -795,3 +883,176 @@ export const updateOwnerOrderStatus = async (req, res) => {
     });
   }
 };
+
+/**
+ * Customer / Shop Owner / Admin: Order Tracking Endpoint
+ * @route GET /api/orders/:orderId/tracking
+ */
+export const getOrderTracking = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID.'
+      });
+    }
+
+    const order = await Order.findById(orderId)
+      .populate('statusHistory.changedBy', 'name role')
+      .populate('statusHistory.updatedBy', 'name role')
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found.'
+      });
+    }
+
+    // Role-based Access Control & Isolation
+    if (userRole === 'CUSTOMER') {
+      if (order.customerId.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access forbidden. You can only track your own orders.'
+        });
+      }
+    } else if (userRole === 'OWNER') {
+      const hasShopItems = order.items.some((i) => i.ownerId.toString() === userId);
+      if (!hasShopItems) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access forbidden. This order does not contain items from your shop.'
+        });
+      }
+    } else if (userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to track this order.'
+      });
+    }
+
+    // Standard lifecycle milestones
+    const MILESTONES = [
+      { key: 'PLACED', title: 'Order Placed', description: 'Order was placed by customer and logged in our system.' },
+      { key: 'CONFIRMED', title: 'Order Confirmed', description: 'Partner shop confirmed inventory availability.' },
+      { key: 'PROCESSING', title: 'Processing', description: 'Spare parts are being packaged and prepared.' },
+      { key: 'READY_FOR_DISPATCH', title: 'Ready for Dispatch', description: 'Package is sealed and ready for courier pickup / local dispatch.' },
+      { key: 'SHIPPED', title: 'Shipped', description: 'Package has been dispatched for delivery.' },
+      { key: 'DELIVERED', title: 'Delivered', description: 'Package successfully delivered to the customer.' }
+    ];
+
+    const isCancelled = order.orderStatus === 'CANCELLED';
+
+    // Map actual timestamps from statusHistory
+    const milestoneStatusMap = {};
+    if (Array.isArray(order.statusHistory)) {
+      order.statusHistory.forEach((entry) => {
+        if (!milestoneStatusMap[entry.status]) {
+          milestoneStatusMap[entry.status] = {
+            timestamp: entry.timestamp || entry.changedAt,
+            message: entry.customerSafeMessage || entry.note || `Status marked as ${entry.status}`,
+            updatedByRole: entry.changedBy?.role || 'SYSTEM'
+          };
+        }
+      });
+    }
+
+    const currentStatusIndex = MILESTONES.findIndex((m) => m.key === order.orderStatus);
+
+    const timeline = MILESTONES.map((m, idx) => {
+      const isReached = isCancelled
+        ? !!milestoneStatusMap[m.key]
+        : (currentStatusIndex !== -1 && idx <= currentStatusIndex) || !!milestoneStatusMap[m.key];
+      const isCurrent = !isCancelled && order.orderStatus === m.key;
+      const historyInfo = milestoneStatusMap[m.key] || null;
+
+      return {
+        key: m.key,
+        title: m.title,
+        description: m.description,
+        isCompleted: isReached && !isCurrent,
+        isCurrent: isCurrent,
+        timestamp: historyInfo?.timestamp || null,
+        message: historyInfo?.message || null
+      };
+    });
+
+    // Sanitize shop fulfillment info
+    let shopsData = order.shops || [];
+    let itemsData = order.items || [];
+
+    if (userRole === 'OWNER') {
+      // Isolation: Shop owners see only their fulfillment info
+      shopsData = shopsData.filter((s) => s.ownerId.toString() === userId);
+      itemsData = itemsData.filter((i) => i.ownerId.toString() === userId);
+    }
+
+    const formattedHistory = (order.statusHistory || []).map((h) => ({
+      status: h.status,
+      timestamp: h.timestamp || h.changedAt,
+      customerSafeMessage: h.customerSafeMessage || h.note || `Order status updated to ${h.status}`,
+      updatedBy: userRole === 'ADMIN' ? (h.changedBy?.name || 'System') : undefined
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        orderStatus: order.orderStatus,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        isCancelled,
+        cancellation: isCancelled ? {
+          cancelledAt: order.cancellation?.cancelledAt || order.updatedAt,
+          reason: order.cancellation?.reason || 'Order cancelled'
+        } : null,
+        trackingMode: 'ORDER_STATUS_TRACKING',
+        trackingDisclaimer: 'Milestone-based internal order tracking. Real-time GPS or third-party courier telemetry is not integrated.',
+        timeline,
+        statusHistory: formattedHistory,
+        shippingAddress: {
+          fullName: order.shippingAddress.fullName,
+          city: order.shippingAddress.city,
+          state: order.shippingAddress.state,
+          postalCode: order.shippingAddress.postalCode,
+          addressLine: order.shippingAddress.addressLine
+        },
+        shops: shopsData.map((s) => ({
+          shopId: s.shopId,
+          shopName: s.shopName,
+          fulfillmentStatus: s.fulfillmentStatus,
+          statusHistory: (s.statusHistory || []).map((sh) => ({
+            status: sh.status,
+            timestamp: sh.timestamp || sh.changedAt,
+            customerSafeMessage: sh.customerSafeMessage || sh.note || ''
+          }))
+        })),
+        items: itemsData.map((it) => ({
+          _id: it._id,
+          partName: it.partName,
+          partNumber: it.partNumber,
+          quantity: it.quantity,
+          shopName: it.shopName,
+          unitPrice: it.unitPrice,
+          subtotal: it.subtotal,
+          imagePath: it.imagePath
+        }))
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching order tracking info:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve order tracking information.'
+    });
+  }
+};
+

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { searchByImage } from '../services/api';
+import { searchByImage, getImageUrl } from '../services/api';
 import './ImageSearchModal.css';
 
 export default function ImageSearchModal({ isOpen, onClose, onSelectPart }) {
@@ -237,8 +237,7 @@ export default function ImageSearchModal({ isOpen, onClose, onSelectPart }) {
                     type="button"
                     className="img-tag-btn"
                     onClick={() => {
-                      handleClose();
-                      navigate(`/parts?search=${encodeURIComponent(term)}`);
+                      setCustomKeyword(term);
                     }}
                   >
                     🔍 {term}
@@ -250,6 +249,37 @@ export default function ImageSearchModal({ isOpen, onClose, onSelectPart }) {
                   Confidence: {identifiedInfo.confidence}
                 </span>
               )}
+            </div>
+
+            {/* Confirm or Correct Detected Part Name */}
+            <div className="img-confirm-search-box" style={{ margin: '14px 0', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <label htmlFor="confirm-img-keyword" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Confirm or Correct Detected Part Name:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  id="confirm-img-keyword"
+                  type="text"
+                  className="form-input"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  placeholder="e.g. Brake Pads, Spark Plug, Air Filter..."
+                  value={customKeyword || identifiedInfo?.probablePartName || ''}
+                  onChange={(e) => setCustomKeyword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    const finalQuery = (customKeyword || identifiedInfo?.probablePartName || '').trim();
+                    if (finalQuery) {
+                      handleClose();
+                      navigate(`/parts?search=${encodeURIComponent(finalQuery)}`);
+                    }
+                  }}
+                >
+                  Search Catalog →
+                </button>
+              </div>
             </div>
 
             {/* Actual Inventory Matches */}
@@ -287,7 +317,7 @@ export default function ImageSearchModal({ isOpen, onClose, onSelectPart }) {
                   <div key={part._id} className="img-part-card">
                     {part.imagePaths?.[0] ? (
                       <img
-                        src={part.imagePaths[0].startsWith('http') ? part.imagePaths[0] : `http://localhost:5000${part.imagePaths[0]}`}
+                        src={getImageUrl(part.imagePaths[0])}
                         alt={part.partName}
                         className="img-part-thumb"
                       />

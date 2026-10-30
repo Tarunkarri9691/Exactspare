@@ -48,6 +48,75 @@
   gap: var(--spacing-md);
 }
 
+/* Form Groups, Labels & Inputs with high contrast */
+.register-card .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.register-card .form-group label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-navy-primary, #0B192C) !important;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.register-card .form-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  background-color: #F8FAFC !important;
+  border: 1.5px solid #CBD5E1 !important;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.95rem;
+  color: #0F172A !important;
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.register-card .form-input::placeholder {
+  color: #94A3B8 !important;
+  font-size: 0.88rem;
+}
+
+.register-card .form-input:focus {
+  outline: none;
+  background-color: #FFFFFF !important;
+  border-color: var(--color-orange-primary, #FF6500) !important;
+  box-shadow: 0 0 0 3px var(--color-orange-glow, rgba(255, 101, 0, 0.2)) !important;
+}
+
+.register-card .password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.register-card .password-input-wrapper .form-input {
+  padding-right: 44px;
+}
+
+.register-card .password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #64748B;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.register-card .password-toggle-btn:hover {
+  color: #0F172A;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr;

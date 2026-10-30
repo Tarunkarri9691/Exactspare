@@ -4,6 +4,7 @@ import {
   getSearchMetadata,
   getRecentAvailableParts,
   geocodeAddress,
+  getDirectionsRoute,
   getSearchSuggestions,
   searchByIdentifier,
   searchByImage
@@ -11,20 +12,23 @@ import {
 import { uploadSearchImage } from '../utils/upload.js';
 import { imageSearchLimiter } from '../middleware/rateLimiter.js';
 
+import { publicCache } from '../middleware/cacheMiddleware.js';
+
 const router = express.Router();
 
 /**
  * Public location-based search and discovery routes
  */
 router.get('/nearby-parts', searchNearbyParts);
-router.get('/meta', getSearchMetadata);
-router.get('/recent-parts', getRecentAvailableParts);
+router.get('/meta', publicCache(60), getSearchMetadata);
+router.get('/recent-parts', publicCache(30), getRecentAvailableParts);
 router.get('/geocode', geocodeAddress);
+router.get('/route', getDirectionsRoute);
 
 /**
  * Module 11: Suggestions, Identifier and Image-based Search
  */
-router.get('/suggestions', getSearchSuggestions);
+router.get('/suggestions', publicCache(30), getSearchSuggestions);
 router.get('/identifier', searchByIdentifier);
 router.post(
   '/image',

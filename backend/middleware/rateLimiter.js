@@ -79,4 +79,78 @@ export const apiLimiter = rateLimit({
   }
 });
 
-export default { authLimiter, orderLimiter, aiLimiter, apiLimiter };
+/**
+ * Rate limiter for Customer Support ticket creation
+ * Prevents spamming ticket creation
+ */
+export const supportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 25, // Limit to 25 ticket creations per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    statusCode: 429,
+    message: 'Support ticket rate limit reached. Please wait a few moments before submitting another request.'
+  }
+});
+
+/**
+ * Rate limiter for Password Reset requests
+ * Prevents enumeration attacks and email flooding.
+ */
+export const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 password reset attempts per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    statusCode: 429,
+    message: 'Too many password reset requests from this IP. Please try again after 15 minutes.'
+  }
+});
+
+/**
+ * Rate limiter for Email Verification requests
+ */
+export const verificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit to 10 verification requests per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    statusCode: 429,
+    message: 'Too many verification attempts from this IP. Please try again after 15 minutes.'
+  }
+});
+
+/**
+ * Rate limiter for Change Password endpoint
+ */
+export const changePasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // Limit to 15 change password attempts per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    statusCode: 429,
+    message: 'Too many password change attempts. Please try again after 15 minutes.'
+  }
+});
+
+export default {
+  authLimiter,
+  orderLimiter,
+  aiLimiter,
+  imageSearchLimiter,
+  apiLimiter,
+  supportLimiter,
+  passwordResetLimiter,
+  verificationLimiter,
+  changePasswordLimiter
+};
+
+

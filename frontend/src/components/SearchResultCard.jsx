@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCompare } from '../context/CompareContext';
@@ -9,13 +8,10 @@ import './SearchResultCard.css';
 const SearchResultCard = ({ part, userLocation }) => {
   if (!part) return null;
 
-  const { addItem } = useCart();
   const { user } = useAuth();
   const { isItemInWishlist, toggleWishlist } = useWishlist();
   const { addToCompare, isInCompare, openCompareModal } = useCompare();
   const navigate = useNavigate();
-  const [added, setAdded] = useState(false);
-  const [adding, setAdding] = useState(false);
 
   const inWishlist = isItemInWishlist(part._id);
 
@@ -31,25 +27,6 @@ const SearchResultCard = ({ part, userLocation }) => {
       return;
     }
     await toggleWishlist(part._id);
-  };
-
-  const handleQuickAdd = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      navigate(`/login?redirect=/parts/${part._id}`);
-      return;
-    }
-    if (user.role !== 'CUSTOMER') {
-      alert('Only customer accounts can add items to cart.');
-      return;
-    }
-    setAdding(true);
-    const res = await addItem(part._id, 1);
-    setAdding(false);
-    if (res.success) {
-      setAdded(true);
-      setTimeout(() => setAdded(false), 2500);
-    }
   };
 
   const partThumb = Array.isArray(part.imagePaths) && part.imagePaths.length > 0
@@ -81,20 +58,33 @@ const SearchResultCard = ({ part, userLocation }) => {
       {/* Product Image Wrap */}
       <div className="card-thumb-wrap">
         {partThumb ? (
-          <img src={partThumb} alt={part.partName} className="card-thumb-img" loading="lazy" />
-        ) : (
-          <div className="card-no-thumb">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            <span>Photo Pending</span>
-          </div>
-        )}
+          <img
+            src={partThumb}
+            alt={part.partName}
+            className="card-thumb-img"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.parentElement?.querySelector('.card-fallback-placeholder');
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div
+          className="card-no-thumb card-fallback-placeholder"
+          style={{ display: partThumb ? 'none' : 'flex' }}
+        >
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Photo Pending</span>
+        </div>
 
         <div className="card-overlay-tags">
-          <span className="badge-veh-type">{part.vehicleType}</span>
+          {part?.vehicleType && <span className="badge-veh-type">{part.vehicleType}</span>}
           {distanceKm !== null && (
             <span className="badge-distance" title="Straight-line distance (road travel distance may vary)">
               📍 {distanceKm} km
@@ -196,65 +186,55 @@ const SearchResultCard = ({ part, userLocation }) => {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="card-actions-row">
-            <Link to={`/parts/${part._id}`} className="btn btn-outline btn-details">
-              View Details
-            </Link>
-            {!isOutOfStock && (
+          {/* Action Buttons: Structured Dual-Row Layout */}
+          <div className="card-actions-container">
+            <div className="card-actions-primary-row">
+              <Link to={`/parts/${part._id}`} className="btn btn-outline btn-details">
+                View Details
+              </Link>
+              <Link
+                to={part.shop?._id ? (
+                  userLocation?.latitude && userLocation?.longitude
+                    ? `/shops/${part.shop._id}/directions?originLat=${userLocation.latitude}&originLng=${userLocation.longitude}`
+                    : `/shops/${part.shop._id}/directions`
+                ) : '#'}
+                className="btn btn-primary btn-directions"
+                title="Get in-app driving directions to this shop"
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+                <span>Directions</span>
+              </Link>
+            </div>
+            <div className="card-actions-secondary-row">
+              {part.shop?._id && (
+                <Link
+                  to={`/shops/${part.shop._id}`}
+                  className="btn btn-outline btn-view-store"
+                  title="View full shopfront and in-stock inventory"
+                >
+                  🏬 Storefront
+                </Link>
+              )}
               <button
                 type="button"
-                className={`btn btn-quick-cart ${added ? 'btn-success' : 'btn-orange-subtle'}`}
-                onClick={handleQuickAdd}
-                disabled={adding}
-                title="Add 1 unit to shopping cart"
+                className={`btn btn-outline btn-compare-quick ${isInCompare(part._id) ? 'btn-navy-active' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const res = addToCompare(part);
+                  if (res.success) {
+                    openCompareModal();
+                  } else {
+                    alert(res.message);
+                  }
+                }}
+                title={isInCompare(part._id) ? 'Remove from compare' : 'Add to compare tray'}
               >
-                {adding ? (
-                  '...'
-                ) : added ? (
-                  '✔ In Cart'
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="9" cy="21" r="1"></circle>
-                      <circle cx="20" cy="21" r="1"></circle>
-                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                    </svg>
-                    <span>+ Cart</span>
-                  </>
-                )}
+                <span>⚖️ Compare</span>
               </button>
-            )}
-            <a
-              href={directionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline btn-directions"
-              title="Open directions in external map"
-            >
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-              </svg>
-              <span>Map</span>
-            </a>
-
-            <button
-              type="button"
-              className={`btn btn-outline btn-compare-quick ${isInCompare(part._id) ? 'btn-navy-active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const res = addToCompare(part);
-                if (res.success) {
-                  openCompareModal();
-                } else {
-                  alert(res.message);
-                }
-              }}
-              title="Add part to compare tray"
-            >
-              <span>⚖️</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,0 +1,718 @@
+/* OwnerEnquiriesPage styles */
+
+.owner-enquiries-root {
+  min-height: 70vh;
+  padding-bottom: 40px;
+}
+
+.owner-enquiries-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header Card */
+.enquiries-header-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.enquiries-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.enquiries-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.enquiries-subtitle {
+  color: #64748b;
+  font-size: 0.92rem;
+  margin: 0;
+  max-width: 650px;
+  line-height: 1.5;
+}
+
+.enquiries-header-stats-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.enquiries-header-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  min-width: 120px;
+}
+
+.stat-new .stat-number {
+  color: #ea580c;
+}
+
+.stat-total .stat-number {
+  color: #0f172a;
+}
+
+.stat-number {
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* Action feedback alert banners */
+.owner-action-alert {
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.alert-danger {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Approval Notice */
+.enquiries-approval-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #92400e;
+  font-size: 0.88rem;
+}
+
+.notice-icon {
+  font-size: 1.2rem;
+}
+
+.notice-text {
+  flex: 1;
+}
+
+.notice-link {
+  margin-left: 8px;
+  font-weight: 700;
+  color: #b45309;
+  text-decoration: underline;
+}
+
+/* Toolbar */
+.enquiries-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.enquiries-tabs {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.enquiries-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.enquiries-tab:hover {
+  color: #0f172a;
+}
+
+.enquiries-tab.active {
+  background: #ffffff;
+  color: #ea580c;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.enquiries-search-form {
+  margin: 0;
+}
+
+.enquiries-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.enquiries-search-input {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 38px 8px 14px;
+  font-size: 0.88rem;
+  width: 290px;
+  transition: border-color 0.2s ease;
+}
+
+.enquiries-search-input:focus {
+  outline: none;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 32px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 13px;
+}
+
+.search-submit-btn {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+}
+
+/* Enquiries Grid / Cards */
+.enquiries-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.owner-enquiry-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.owner-enquiry-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.owner-enquiry-card.status-new {
+  border-left: 4px solid #ea580c;
+}
+
+.owner-enquiry-card.status-in_progress {
+  border-left: 4px solid #0284c7;
+}
+
+.owner-enquiry-card.status-replied {
+  border-left: 4px solid #16a34a;
+}
+
+.owner-enquiry-card.status-closed {
+  border-left: 4px solid #94a3b8;
+  opacity: 0.85;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.card-customer-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customer-avatar-initials {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #0f172a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.customer-name-heading {
+  font-size: 1.05rem;
+  color: #0f172a;
+  display: block;
+}
+
+.customer-contact-subline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.contact-chip {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.phone-chip {
+  color: #0284c7;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.phone-chip:hover {
+  text-decoration: underline;
+}
+
+.card-status-badge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pill-new {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.pill-in_progress {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.pill-replied {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pill-closed {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.card-date-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* Referenced Part Card */
+.enquiry-referenced-part-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.part-icon {
+  font-size: 18px;
+}
+
+.part-info-inline {
+  flex: 1;
+}
+
+.part-name-text {
+  font-size: 13.5px;
+  color: #0f172a;
+  display: block;
+}
+
+.part-meta-text {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.view-part-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ea580c;
+  text-decoration: none;
+}
+
+.view-part-link:hover {
+  text-decoration: underline;
+}
+
+/* Vehicle compatibility card */
+.enquiry-vehicle-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 9px 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.vehicle-icon {
+  font-size: 16px;
+  margin-top: 1px;
+}
+
+.vehicle-title {
+  font-weight: 600;
+  color: #1e40af;
+  margin-right: 6px;
+}
+
+.vehicle-spec {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.vehicle-question-sub {
+  margin-top: 4px;
+  color: #334155;
+}
+
+/* Content Box */
+.enquiry-content-box {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.enquiry-subject-heading {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.enquiry-message-text {
+  font-size: 13.5px;
+  color: #334155;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.replies-summary-line {
+  font-size: 12.5px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.last-reply-time {
+  color: #94a3b8;
+  font-size: 11.5px;
+}
+
+/* Card Actions */
+.enquiry-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.status-dropdown-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-select-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.status-dropdown {
+  padding: 5px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.status-dropdown:focus {
+  outline: none;
+  border-color: #ea580c;
+}
+
+.action-buttons-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Pagination */
+.enquiries-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.pagination-btn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Thread Modal */
+.enquiry-thread-modal-sheet {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+}
+
+.thread-modal-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #f8fafc;
+}
+
+.thread-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 6px 0 2px;
+}
+
+.thread-modal-customer {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.thread-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.thread-part-preview {
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.thread-message {
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.message-customer {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0f172a;
+}
+
+.message-owner {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid #ea580c;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.message-bubble-content p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #0f172a;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.thread-reply-form {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reply-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.thread-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Loading & Empty States */
+.enquiries-loading-state, .enquiries-empty-state {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.empty-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #ea580c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.enquiries-empty-state h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.empty-desc {
+  color: #64748b;
+  font-size: 0.95rem;
+  max-width: 580px;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.enquiries-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #ea580c;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -8,13 +8,23 @@ import {
   updatePart,
   deletePart,
   uploadPartImagesAction,
-  deletePartImageAction
+  deletePartImageAction,
+  autoFillPartFromImage
 } from '../controllers/partController.js';
 import { searchNearbyParts } from '../controllers/searchController.js';
 import { authenticateUser, authorizeRoles, optionalAuthenticateUser } from '../middleware/authMiddleware.js';
-import { uploadPartImages } from '../utils/upload.js';
+import { uploadPartImages, uploadPartScan } from '../utils/upload.js';
 
 const router = express.Router();
+
+// Auto-fill Part Details from Uploaded Photo
+router.post(
+  '/auto-fill-from-image',
+  authenticateUser,
+  authorizeRoles('OWNER'),
+  uploadPartScan,
+  autoFillPartFromImage
+);
 
 // Owner Protected Routes (Declared before :id route)
 router.get(

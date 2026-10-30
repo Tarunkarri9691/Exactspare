@@ -5,8 +5,13 @@ import {
   getSalesAnalytics,
   getOrderAnalytics,
   getProductAnalytics,
+  getInventoryAnalytics,
   getShopAnalytics,
-  getCustomerAnalytics
+  getCustomerAnalytics,
+  exportOrdersCsv,
+  exportInventoryCsv,
+  exportShopsCsv,
+  exportCustomersCsv
 } from '../controllers/adminAnalyticsController.js';
 import {
   getAdminShops,
@@ -29,14 +34,21 @@ const router = express.Router();
 router.use(authenticateUser, authorizeRoles('ADMIN'));
 
 /* ========================================================
-   1. ANALYTICS & REPORTS ENDPOINTS
+   1. ANALYTICS & REPORTS ENDPOINTS (MODULE 16)
    ======================================================== */
 router.get('/analytics/overview', getAnalyticsOverview);
 router.get('/analytics/sales', getSalesAnalytics);
 router.get('/analytics/orders', getOrderAnalytics);
 router.get('/analytics/products', getProductAnalytics);
+router.get('/analytics/inventory', getInventoryAnalytics);
 router.get('/analytics/shops', getShopAnalytics);
 router.get('/analytics/customers', getCustomerAnalytics);
+
+/* CSV REPORT EXPORT ENDPOINTS (ADMIN-PROTECTED) */
+router.get('/reports/orders.csv', exportOrdersCsv);
+router.get('/reports/inventory.csv', exportInventoryCsv);
+router.get('/reports/shops.csv', exportShopsCsv);
+router.get('/reports/customers.csv', exportCustomersCsv);
 
 /* ========================================================
    2. SHOP MANAGEMENT ENDPOINTS

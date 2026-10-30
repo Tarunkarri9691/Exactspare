@@ -12,8 +12,8 @@ const shopSchema = new mongoose.Schema(
     applicationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ShopApplication',
-      required: [true, 'Application ID is required'],
-      unique: true,
+      required: false,
+      sparse: true,
       index: true
     },
     name: {

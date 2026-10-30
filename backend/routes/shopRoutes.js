@@ -4,7 +4,9 @@ import {
   getPublicShopById,
   getMyApprovedShop,
   updateMyShop,
+  updateMyShopLocation,
   uploadMyShopImages,
+  deleteMyShopImage,
   updateShopStatusAdmin
 } from '../controllers/shopController.js';
 import { authenticateUser, authorizeRoles } from '../middleware/authMiddleware.js';
@@ -27,12 +29,26 @@ router.patch(
   updateMyShop
 );
 
+router.patch(
+  '/my/location',
+  authenticateUser,
+  authorizeRoles('OWNER'),
+  updateMyShopLocation
+);
+
 router.post(
   '/my/images',
   authenticateUser,
   authorizeRoles('OWNER'),
   uploadShopImages,
   uploadMyShopImages
+);
+
+router.delete(
+  '/my/images',
+  authenticateUser,
+  authorizeRoles('OWNER'),
+  deleteMyShopImage
 );
 
 // Admin Shop Governance

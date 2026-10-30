@@ -64,11 +64,28 @@ const NotificationsPage = () => {
       case 'NEW_ORDER_RECEIVED':
       case 'ORDER_PLACED':
         return '📦';
+      case 'PART_ADDED':
+      case 'PART_UPDATED':
+        return '⚙️';
+      case 'PART_PUBLISHED':
+        return '🟢';
+      case 'PART_UNPUBLISHED':
+        return '📝';
+      case 'PART_LOW_STOCK':
+      case 'PART_OUT_OF_STOCK':
+        return '⚠️';
+      case 'CUSTOMER_ENQUIRY':
+        return '💬';
       case 'SHOP_APPROVED':
+      case 'APPLICATION_APPROVED':
         return '🏬';
       case 'SHOP_REJECTED':
+      case 'APPLICATION_REJECTED':
       case 'SHOP_CORRECTIONS_REQUIRED':
+      case 'CORRECTION_REQUESTED':
         return '⚠️';
+      case 'APPLICATION_SUBMITTED':
+        return '📝';
       case 'NEW_REVIEW_RECEIVED':
         return '⭐';
       default:
@@ -193,13 +210,13 @@ const NotificationsPage = () => {
                         className="btn-link-action"
                         onClick={() => {
                           if (!n.isRead) markAsRead(n._id);
-                          navigate(`/orders/${n.relatedOrderId}`);
+                          navigate(user?.role === 'OWNER' ? '/owner/orders' : '/customer/orders');
                         }}
                       >
                         View Order Details →
                       </button>
                     )}
-                    {n.type.includes('SHOP') && (
+                    {(n.type.includes('SHOP') || n.type.includes('APPLICATION')) && (
                       <button
                         type="button"
                         className="btn-link-action"
@@ -209,6 +226,30 @@ const NotificationsPage = () => {
                         }}
                       >
                         View Shop Profile →
+                      </button>
+                    )}
+                    {n.type.startsWith('PART_') && user?.role === 'OWNER' && (
+                      <button
+                        type="button"
+                        className="btn-link-action"
+                        onClick={() => {
+                          if (!n.isRead) markAsRead(n._id);
+                          navigate('/owner/inventory');
+                        }}
+                      >
+                        Manage Inventory Catalog →
+                      </button>
+                    )}
+                    {n.type === 'CUSTOMER_ENQUIRY' && user?.role === 'OWNER' && (
+                      <button
+                        type="button"
+                        className="btn-link-action"
+                        onClick={() => {
+                          if (!n.isRead) markAsRead(n._id);
+                          navigate('/owner/enquiries');
+                        }}
+                      >
+                        View Customer Enquiry →
                       </button>
                     )}
                   </div>

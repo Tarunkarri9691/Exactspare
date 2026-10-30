@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { fetchMyInventory, deletePartApi } from '../services/api';
+import { fetchMyInventory, deletePartApi, updatePartApi } from '../services/api';
 import './OwnerInventoryPage.css';
 
 const CATEGORIES = [
@@ -31,10 +31,11 @@ const OwnerInventoryPage = () => {
   const [parts, setParts] = useState([]);
   const [stats, setStats] = useState({
     totalParts: 0,
+    publishedCount: 0,
+    draftCount: 0,
     inStockCount: 0,
     outOfStockCount: 0,
-    lowStockCount: 0,
-    draftCount: 0
+    lowStockCount: 0
   });
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
 
@@ -42,6 +43,9 @@ const OwnerInventoryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedVehicleType, setSelectedVehicleType] = useState('ALL');
+  const [selectedCondition, setSelectedCondition] = useState('ALL');
+  const [selectedAvailability, setSelectedAvailability] = useState('ALL');
+  const [selectedPublication, setSelectedPublication] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,6 +57,16 @@ const OwnerInventoryPage = () => {
   // Delete modal state
   const [deletingPart, setDeletingPart] = useState(null);
   const [submittingDelete, setSubmittingDelete] = useState(false);
+
+  // Quick Price & Stock Edit state
+  const [quickEditPart, setQuickEditPart] = useState(null);
+  const [quickPrice, setQuickPrice] = useState('');
+  const [quickStock, setQuickStock] = useState('');
+  const [savingQuickEdit, setSavingQuickEdit] = useState(false);
+
+  // View Part modal & Toggle Publish state
+  const [viewingPart, setViewingPart] = useState(null);
+  const [togglingPublishId, setTogglingPublishId] = useState(null);
 
   const loadInventory = useCallback(async () => {
     try {
@@ -68,6 +82,9 @@ const OwnerInventoryPage = () => {
       if (searchQuery.trim()) params.search = searchQuery.trim();
       if (selectedCategory !== 'ALL') params.category = selectedCategory;
       if (selectedVehicleType !== 'ALL') params.vehicleType = selectedVehicleType;
+      if (selectedCondition !== 'ALL') params.condition = selectedCondition;
+      if (selectedAvailability !== 'ALL') params.availability = selectedAvailability;
+      if (selectedPublication !== 'ALL') params.publication = selectedPublication;
       if (selectedStatus !== 'ALL') params.status = selectedStatus;
 
       const res = await fetchMyInventory(params);
@@ -83,7 +100,7 @@ const OwnerInventoryPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, selectedCategory, selectedVehicleType, selectedStatus, sortBy]);
+  }, [currentPage, searchQuery, selectedCategory, selectedVehicleType, selectedCondition, selectedAvailability, selectedPublication, selectedStatus, sortBy]);
 
   useEffect(() => {
     loadInventory();
@@ -93,6 +110,76 @@ const OwnerInventoryPage = () => {
     e.preventDefault();
     setCurrentPage(1);
     loadInventory();
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('ALL');
+    setSelectedVehicleType('ALL');
+    setSelectedCondition('ALL');
+    setSelectedAvailability('ALL');
+    setSelectedPublication('ALL');
+    setSelectedStatus('ALL');
+    setSortBy('newest');
+    setCurrentPage(1);
+  };
+
+  const handleOpenQuickEdit = (part) => {
+    setQuickEditPart(part);
+    setQuickPrice(String(part.price ?? ''));
+    setQuickStock(String(part.stockQuantity ?? '0'));
+    setError('');
+  };
+
+  const handleSaveQuickEdit = async (e) => {
+    e.preventDefault();
+    if (!quickEditPart) return;
+
+    const numPrice = parseFloat(quickPrice);
+    const numStock = parseInt(quickStock, 10);
+
+    if (isNaN(numPrice) || numPrice < 0) {
+      setError('Please enter a valid non-negative selling price in INR.');
+      return;
+    }
+    if (isNaN(numStock) || numStock < 0) {
+      setError('Please enter a valid non-negative stock quantity.');
+      return;
+    }
+
+    try {
+      setSavingQuickEdit(true);
+      setError('');
+      const res = await updatePartApi(quickEditPart._id, {
+        price: numPrice,
+        stockQuantity: numStock
+      });
+
+      if (res.success) {
+        setParts((prev) =>
+          prev.map((p) =>
+            p._id === quickEditPart._id
+              ? {
+                  ...p,
+                  price: numPrice,
+                  stockQuantity: numStock,
+                  availabilityStatus: numStock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK'
+                }
+              : p
+          )
+        );
+        setSuccessMessage(`Updated price to ₹${numPrice.toLocaleString('en-IN')} and stock to ${numStock} for "${quickEditPart.partName}".`);
+        setTimeout(() => setSuccessMessage(''), 4000);
+        setQuickEditPart(null);
+        loadInventory();
+      } else {
+        setError(res.error || 'Failed to update price and stock.');
+      }
+    } catch {
+      setError('An error occurred while updating price and stock.');
+    } finally {
+      setSavingQuickEdit(false);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -111,6 +198,28 @@ const OwnerInventoryPage = () => {
       setError('An error occurred while attempting to delete.');
     } finally {
       setSubmittingDelete(false);
+    }
+  };
+
+  const handleTogglePublish = async (part) => {
+    try {
+      setTogglingPublishId(part._id);
+      setError('');
+      const newStatus = !part.isPublished;
+      const res = await updatePartApi(part._id, { isPublished: newStatus });
+      if (res.success) {
+        setParts((prev) =>
+          prev.map((p) => (p._id === part._id ? { ...p, isPublished: newStatus } : p))
+        );
+        setSuccessMessage(`Listing "${part.partName}" is now ${newStatus ? 'Published to marketplace' : 'saved as Draft'}.`);
+        setTimeout(() => setSuccessMessage(''), 3500);
+      } else {
+        setError(res.error || 'Failed to update publication status.');
+      }
+    } catch {
+      setError('An error occurred while updating publication status.');
+    } finally {
+      setTogglingPublishId(null);
     }
   };
 
@@ -134,7 +243,7 @@ const OwnerInventoryPage = () => {
               </svg>
               My Shop Profile
             </Link>
-            <Link to="/owner/inventory/new" className="btn btn-primary add-part-cta">
+            <Link to="/owner/inventory/add" className="btn btn-primary add-part-cta" id="owner-add-part-btn">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -159,11 +268,16 @@ const OwnerInventoryPage = () => {
           </div>
         )}
 
-        {/* Overview Metric Cards */}
+        {/* Overview Metric Cards (Exact 5 Categories from Module Requirements) */}
         <div className="inventory-stats-grid">
           <div
-            className={`stat-card ${selectedStatus === 'ALL' ? 'active-filter' : ''}`}
-            onClick={() => { setSelectedStatus('ALL'); setCurrentPage(1); }}
+            className={`stat-card ${selectedStatus === 'ALL' && selectedAvailability === 'ALL' && selectedPublication === 'ALL' ? 'active-filter' : ''}`}
+            onClick={() => {
+              setSelectedStatus('ALL');
+              setSelectedAvailability('ALL');
+              setSelectedPublication('ALL');
+              setCurrentPage(1);
+            }}
           >
             <div className="stat-icon-wrap icon-navy">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
@@ -172,14 +286,19 @@ const OwnerInventoryPage = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <span className="stat-label">Total Catalog</span>
+              <span className="stat-label">Total Parts</span>
               <span className="stat-number">{stats.totalParts || 0}</span>
             </div>
           </div>
 
           <div
-            className={`stat-card ${selectedStatus === 'IN_STOCK' ? 'active-filter' : ''}`}
-            onClick={() => { setSelectedStatus('IN_STOCK'); setCurrentPage(1); }}
+            className={`stat-card ${selectedPublication === 'PUBLISHED' ? 'active-filter' : ''}`}
+            onClick={() => {
+              setSelectedPublication('PUBLISHED');
+              setSelectedStatus('ALL');
+              setSelectedAvailability('ALL');
+              setCurrentPage(1);
+            }}
           >
             <div className="stat-icon-wrap icon-green">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
@@ -188,14 +307,62 @@ const OwnerInventoryPage = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <span className="stat-label">In Stock</span>
-              <span className="stat-number stat-green">{stats.inStockCount || 0}</span>
+              <span className="stat-label">Published Parts</span>
+              <span className="stat-number stat-green">{stats.publishedCount || 0}</span>
             </div>
           </div>
 
           <div
-            className={`stat-card ${selectedStatus === 'OUT_OF_STOCK' ? 'active-filter' : ''}`}
-            onClick={() => { setSelectedStatus('OUT_OF_STOCK'); setCurrentPage(1); }}
+            className={`stat-card ${selectedPublication === 'DRAFT' ? 'active-filter' : ''}`}
+            onClick={() => {
+              setSelectedPublication('DRAFT');
+              setSelectedStatus('ALL');
+              setSelectedAvailability('ALL');
+              setCurrentPage(1);
+            }}
+          >
+            <div className="stat-icon-wrap icon-gray">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </div>
+            <div className="stat-info">
+              <span className="stat-label">Unpublished Parts</span>
+              <span className="stat-number">{stats.draftCount || 0}</span>
+            </div>
+          </div>
+
+          <div
+            className={`stat-card ${selectedAvailability === 'LOW_STOCK' ? 'active-filter' : ''}`}
+            onClick={() => {
+              setSelectedAvailability('LOW_STOCK');
+              setSelectedStatus('ALL');
+              setSelectedPublication('ALL');
+              setCurrentPage(1);
+            }}
+          >
+            <div className="stat-icon-wrap icon-orange">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div className="stat-info">
+              <span className="stat-label">Low-Stock (≤ 3)</span>
+              <span className="stat-number stat-orange">{stats.lowStockCount || 0}</span>
+            </div>
+          </div>
+
+          <div
+            className={`stat-card ${selectedAvailability === 'OUT_OF_STOCK' ? 'active-filter' : ''}`}
+            onClick={() => {
+              setSelectedAvailability('OUT_OF_STOCK');
+              setSelectedStatus('ALL');
+              setSelectedPublication('ALL');
+              setCurrentPage(1);
+            }}
           >
             <div className="stat-icon-wrap icon-red">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
@@ -205,38 +372,8 @@ const OwnerInventoryPage = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <span className="stat-label">Out of Stock</span>
+              <span className="stat-label">Out-of-Stock</span>
               <span className="stat-number stat-red">{stats.outOfStockCount || 0}</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon-wrap icon-orange">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </div>
-            <div className="stat-info">
-              <span className="stat-label">Low Stock (≤ 3)</span>
-              <span className="stat-number stat-orange">{stats.lowStockCount || 0}</span>
-            </div>
-          </div>
-
-          <div
-            className={`stat-card ${selectedStatus === 'DRAFT' ? 'active-filter' : ''}`}
-            onClick={() => { setSelectedStatus('DRAFT'); setCurrentPage(1); }}
-          >
-            <div className="stat-icon-wrap icon-gray">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </div>
-            <div className="stat-info">
-              <span className="stat-label">Drafts</span>
-              <span className="stat-number">{stats.draftCount || 0}</span>
             </div>
           </div>
         </div>
@@ -252,7 +389,7 @@ const OwnerInventoryPage = () => {
               <input
                 type="text"
                 className="filter-search-input"
-                placeholder="Search by part name, SKU, or manufacturer..."
+                placeholder="Search by part name or part number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -292,6 +429,49 @@ const OwnerInventoryPage = () => {
             </div>
 
             <div className="dropdown-control">
+              <label htmlFor="inv-cond-filter">Condition:</label>
+              <select
+                id="inv-cond-filter"
+                className="filter-select"
+                value={selectedCondition}
+                onChange={(e) => { setSelectedCondition(e.target.value); setCurrentPage(1); }}
+              >
+                <option value="ALL">All Conditions</option>
+                <option value="NEW">New</option>
+                <option value="USED">Used</option>
+              </select>
+            </div>
+
+            <div className="dropdown-control">
+              <label htmlFor="inv-avail-filter">Availability:</label>
+              <select
+                id="inv-avail-filter"
+                className="filter-select"
+                value={selectedAvailability}
+                onChange={(e) => { setSelectedAvailability(e.target.value); setCurrentPage(1); }}
+              >
+                <option value="ALL">All Stock Levels</option>
+                <option value="IN_STOCK">In Stock</option>
+                <option value="LOW_STOCK">Low Stock (≤ 3)</option>
+                <option value="OUT_OF_STOCK">Out of Stock</option>
+              </select>
+            </div>
+
+            <div className="dropdown-control">
+              <label htmlFor="inv-pub-filter">Publication:</label>
+              <select
+                id="inv-pub-filter"
+                className="filter-select"
+                value={selectedPublication}
+                onChange={(e) => { setSelectedPublication(e.target.value); setCurrentPage(1); }}
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="PUBLISHED">Published Only</option>
+                <option value="DRAFT">Draft / Unpublished</option>
+              </select>
+            </div>
+
+            <div className="dropdown-control">
               <label htmlFor="inv-sort-filter">Sort By:</label>
               <select
                 id="inv-sort-filter"
@@ -307,6 +487,17 @@ const OwnerInventoryPage = () => {
                 <option value="stock_desc">Stock: High to Low</option>
               </select>
             </div>
+
+            {(searchQuery || selectedCategory !== 'ALL' || selectedVehicleType !== 'ALL' || selectedCondition !== 'ALL' || selectedAvailability !== 'ALL' || selectedPublication !== 'ALL' || selectedStatus !== 'ALL') && (
+              <button
+                type="button"
+                className="btn btn-outline reset-filters-btn"
+                onClick={handleResetFilters}
+                title="Reset all search filters"
+              >
+                Reset Filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -336,7 +527,7 @@ const OwnerInventoryPage = () => {
                   ? 'No spare parts matched your selected filter criteria. Try clearing search filters.'
                   : 'You have not added any spare parts to your inventory catalogue yet.'}
               </p>
-              <Link to="/owner/inventory/new" className="btn btn-primary">
+              <Link to="/owner/inventory/add" className="btn btn-primary">
                 Add Your First Spare Part
               </Link>
             </div>
@@ -403,16 +594,54 @@ const OwnerInventoryPage = () => {
 
                         {/* Price in INR */}
                         <td>
-                          <span className="price-tag">₹{Number(part.price).toLocaleString('en-IN')}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className="price-tag">₹{Number(part.price).toLocaleString('en-IN')}</span>
+                            <button
+                              type="button"
+                              className="quick-edit-icon-btn"
+                              title="Quick update price & stock"
+                              onClick={() => handleOpenQuickEdit(part)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              ✎
+                            </button>
+                          </div>
                         </td>
 
                         {/* Stock Quantity */}
                         <td>
-                          <div className="stock-cell">
+                          <div className="stock-cell" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span className={`stock-count ${isOutOfStock ? 'stock-zero' : isLowStock ? 'stock-low' : 'stock-ok'}`}>
                               {part.stockQuantity} units
                             </span>
                             {isLowStock && <span className="low-stock-pill">Low Stock</span>}
+                            <button
+                              type="button"
+                              className="quick-edit-icon-btn"
+                              title="Quick update stock"
+                              onClick={() => handleOpenQuickEdit(part)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              ✎
+                            </button>
                           </div>
                         </td>
 
@@ -427,26 +656,54 @@ const OwnerInventoryPage = () => {
 
                         {/* Publication Status */}
                         <td>
-                          {part.isPublished ? (
-                            <span className="publish-badge pub-active">Published</span>
-                          ) : (
-                            <span className="publish-badge pub-draft">Draft</span>
-                          )}
+                          <button
+                            type="button"
+                            className={`publish-toggle-btn ${part.isPublished ? 'pub-active' : 'pub-draft'}`}
+                            title={part.isPublished ? 'Click to unpublish (switch to Draft)' : 'Click to publish on marketplace'}
+                            disabled={togglingPublishId === part._id}
+                            onClick={() => handleTogglePublish(part)}
+                          >
+                            {togglingPublishId === part._id ? 'Updating...' : part.isPublished ? '● Published' : '○ Draft'}
+                          </button>
                         </td>
 
                         {/* Actions */}
                         <td>
                           <div className="row-actions">
-                            <Link
-                              to={`/parts/${part._id}`}
+                            <button
+                              type="button"
                               className="action-btn-view"
-                              title="View Public Listing"
+                              title="View Full Part Details"
+                              onClick={() => setViewingPart(part)}
                             >
                               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
+                                <circle cx="12" cy="13" r="3"></circle>
                               </svg>
-                            </Link>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="action-btn-quick"
+                              title="Quick Update Price & Stock"
+                              onClick={() => handleOpenQuickEdit(part)}
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '6px',
+                                border: '1px solid var(--color-border)',
+                                background: 'var(--color-surface)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--color-orange-primary)',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                              </svg>
+                            </button>
 
                             <Link
                               to={`/owner/inventory/${part._id}/edit`}
@@ -509,6 +766,128 @@ const OwnerInventoryPage = () => {
         </div>
       </div>
 
+      {/* View Spare Part Modal */}
+      {viewingPart && (
+        <div className="modal-backdrop fade-in" onClick={() => setViewingPart(null)}>
+          <div className="modal-card view-part-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head-row">
+              <div>
+                <span className="badge badge-orange">{viewingPart.category}</span>
+                <span className="badge badge-navy" style={{ marginLeft: '6px' }}>{viewingPart.vehicleType}</span>
+                <h3>{viewingPart.partName}</h3>
+                <span className="part-subhead">{viewingPart.manufacturer} • SKU: {viewingPart.partNumber}</span>
+              </div>
+              <button
+                type="button"
+                className="close-modal-x"
+                onClick={() => setViewingPart(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="view-part-body">
+              {/* Product Photos */}
+              {viewingPart.imagePaths && viewingPart.imagePaths.length > 0 ? (
+                <div className="modal-part-gallery">
+                  {viewingPart.imagePaths.map((img, idx) => (
+                    <div key={idx} className="gallery-thumb">
+                      <img src={img} alt={`Part ${idx + 1}`} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="no-images-notice">No product photographs uploaded for this item.</p>
+              )}
+
+              {/* Specifications Matrix */}
+              <div className="specs-grid">
+                <div className="spec-item">
+                  <span className="spec-label">Selling Price (Owner Set)</span>
+                  <span className="spec-val price-val">₹{Number(viewingPart.price).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="spec-item">
+                  <span className="spec-label">Available Stock</span>
+                  <span className="spec-val">{viewingPart.stockQuantity} units ({viewingPart.availabilityStatus || 'IN_STOCK'})</span>
+                </div>
+                <div className="spec-item">
+                  <span className="spec-label">Condition</span>
+                  <span className="spec-val">{viewingPart.condition || 'NEW'}</span>
+                </div>
+                <div className="spec-item">
+                  <span className="spec-label">Marketplace Status</span>
+                  <span className="spec-val">{viewingPart.isPublished ? '● Published' : '○ Draft'}</span>
+                </div>
+                {viewingPart.barcode && (
+                  <div className="spec-item">
+                    <span className="spec-label">Barcode / UPC</span>
+                    <span className="spec-val">{viewingPart.barcode}</span>
+                  </div>
+                )}
+                {viewingPart.subcategory && (
+                  <div className="spec-item">
+                    <span className="spec-label">Subcategory</span>
+                    <span className="spec-val">{viewingPart.subcategory}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Compatibility info */}
+              {(viewingPart.compatibleMakes?.length > 0 || viewingPart.compatibleModels?.length > 0) && (
+                <div className="compatibility-block">
+                  <strong>Vehicle Compatibility:</strong>
+                  <p>
+                    Makes: {viewingPart.compatibleMakes?.join(', ') || 'Any'} | Models: {viewingPart.compatibleModels?.join(', ') || 'Any'}
+                    {viewingPart.compatibleYears?.length > 0 && ` | Years: ${viewingPart.compatibleYears.join(', ')}`}
+                  </p>
+                </div>
+              )}
+
+              {/* Description */}
+              {viewingPart.description && (
+                <div className="description-block">
+                  <strong>Description & Specifications:</strong>
+                  <p>{viewingPart.description}</p>
+                </div>
+              )}
+
+              {/* Notes */}
+              {viewingPart.notes && (
+                <div className="notes-block">
+                  <strong>Dealer & Warehouse Notes:</strong>
+                  <p>{viewingPart.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions-row" style={{ marginTop: '20px' }}>
+              {viewingPart.isPublished && (
+                <Link
+                  to={`/parts/${viewingPart._id}`}
+                  className="btn btn-outline"
+                  target="_blank"
+                >
+                  View Marketplace Listing ↗
+                </Link>
+              )}
+              <Link
+                to={`/owner/inventory/${viewingPart._id}/edit`}
+                className="btn btn-primary"
+              >
+                Edit Spare Part Listing
+              </Link>
+              <button
+                type="button"
+                className="btn btn-outline-navy"
+                onClick={() => setViewingPart(null)}
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deletingPart && (
         <div className="modal-backdrop fade-in">
@@ -545,6 +924,105 @@ const OwnerInventoryPage = () => {
                 {submittingDelete ? 'Archiving Listing...' : 'Confirm Remove'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Price & Stock Edit Modal */}
+      {quickEditPart && (
+        <div className="modal-backdrop fade-in" onClick={() => setQuickEditPart(null)}>
+          <div className="modal-card quick-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head-row">
+              <div>
+                <span className="badge badge-orange">Quick Adjustment</span>
+                <h3 style={{ margin: '6px 0 2px' }}>Update Price & Stock</h3>
+                <span className="part-subhead" style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                  {quickEditPart.partName} • SKU: {quickEditPart.partNumber}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="close-modal-x"
+                onClick={() => setQuickEditPart(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuickEdit} className="quick-edit-form" style={{ marginTop: '16px' }}>
+              <div
+                style={{
+                  background: 'rgba(255, 101, 0, 0.08)',
+                  border: '1px solid rgba(255, 101, 0, 0.25)',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  marginBottom: '16px',
+                  fontSize: '0.85rem',
+                  lineHeight: '1.45',
+                  color: 'var(--color-navy-primary)'
+                }}
+              >
+                <strong>Owner-Controlled Pricing:</strong> The store owner manually sets and controls all spare-part prices. AI never decides, overrides, or predicts your pricing.
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label htmlFor="quick-price" style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Selling Price (₹ INR) *
+                </label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>₹</span>
+                  <input
+                    id="quick-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    style={{ paddingLeft: '28px', width: '100%' }}
+                    value={quickPrice}
+                    onChange={(e) => setQuickPrice(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label htmlFor="quick-stock" style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Available Stock Quantity *
+                </label>
+                <input
+                  id="quick-stock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  value={quickStock}
+                  onChange={(e) => setQuickStock(e.target.value)}
+                  required
+                />
+                <span className="field-hint" style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', display: 'block', marginTop: '4px' }}>
+                  Items with 0 quantity automatically show as OUT OF STOCK on customer search.
+                </span>
+              </div>
+
+              <div className="modal-actions-row" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={savingQuickEdit}
+                  onClick={() => setQuickEditPart(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={savingQuickEdit}
+                >
+                  {savingQuickEdit ? 'Saving...' : 'Save Price & Stock'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

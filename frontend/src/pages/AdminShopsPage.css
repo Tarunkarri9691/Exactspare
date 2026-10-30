@@ -481,3 +481,45 @@
   color: #94A3B8;
   font-size: 0.9rem;
 }
+
+/* =========================================================================
+   MOBILE RESPONSIVE OVERHAUL FOR ADMIN SHOPS PAGE
+   ========================================================================= */
+@media (max-width: 768px) {
+  .admin-shops-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .admin-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .search-input-wrapper {
+    width: 100%;
+  }
+
+  .admin-table-container,
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+  }
+
+  .admin-table {
+    min-width: 650px;
+  }
+
+  .admin-modal-content {
+    width: 95% !important;
+    max-height: 90vh;
+    padding: 1.25rem 1rem !important;
+  }
+}

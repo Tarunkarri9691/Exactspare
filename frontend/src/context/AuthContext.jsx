@@ -80,7 +80,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    refreshUser: checkAuthStatus
+    refreshUser: checkAuthStatus,
+    updateUser: setUser
   };
 
   return (
