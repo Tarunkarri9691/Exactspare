@@ -10,7 +10,7 @@ export const config = {
   mongodbUri: process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/exactspare',
   jwtSecret: process.env.JWT_SECRET || 'exactspare_super_secret_jwt_key_change_in_production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5173',
   corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
@@ -58,8 +58,8 @@ export const validateEnvironment = () => {
       );
     }
 
-    if (!process.env.FRONTEND_URL && !process.env.CLIENT_URL) {
-      missing.push('FRONTEND_URL (or CLIENT_URL)');
+    if (!process.env.FRONTEND_URL && !process.env.CLIENT_URL && !process.env.RENDER_EXTERNAL_URL) {
+      missing.push('FRONTEND_URL (or CLIENT_URL or RENDER_EXTERNAL_URL)');
     }
 
     if (missing.length > 0) {

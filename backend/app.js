@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -36,6 +38,10 @@ import { SHOPS_DIR, PARTS_DIR } from './utils/upload.js';
 import { logger } from './utils/logger.js';
 import requireDatabaseConnection from './middleware/dbCheckMiddleware.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.resolve(__dirname, '..', 'frontend', 'dist');
+
 const app = express();
 
 // Security Headers: Helmet protection with cross-origin asset policy for uploaded images
@@ -61,6 +67,7 @@ const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
 const allowedOriginsList = [
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
+  process.env.RENDER_EXTERNAL_URL,
   ...configuredOrigins,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -175,6 +182,18 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/admin/trust', adminTrustRoutes);
 app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+
+// Serve Frontend SPA if frontend/dist exists (Unified Production Deployment)
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    // Pass API and upload routes to notFoundHandler
+    if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 // Centralized 404 Route Handler
 app.use(notFoundHandler);

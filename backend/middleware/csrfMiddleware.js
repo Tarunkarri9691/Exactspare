@@ -27,7 +27,9 @@ export const validateOriginCSRF = (req, res, next) => {
     'http://127.0.0.1:5173',
     'http://localhost:4173',
     'http://127.0.0.1:4173'
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .map((o) => o.replace(/\/+$/, '').toLowerCase());
 
   // Check if origin is localhost on any port in development
   const isLocalDev =
@@ -37,7 +39,8 @@ export const validateOriginCSRF = (req, res, next) => {
 
   // If request contains an Origin header (standard for CORS fetch/XHR)
   if (origin) {
-    if (!isLocalDev && !allowedOrigins.includes(origin)) {
+    const originClean = origin.replace(/\/+$/, '').toLowerCase();
+    if (!isLocalDev && !allowedOrigins.includes(originClean)) {
       logger.warn(`Blocked CSRF state-change attempt with disallowed origin: ${origin}`);
       return res.status(403).json({
         status: 'error',
@@ -50,7 +53,7 @@ export const validateOriginCSRF = (req, res, next) => {
   else if (referer) {
     try {
       const refererUrl = new URL(referer);
-      const refererOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
+      const refererOrigin = `${refererUrl.protocol}//${refererUrl.host}`.replace(/\/+$/, '').toLowerCase();
       if (!isLocalDev && !allowedOrigins.includes(refererOrigin)) {
         logger.warn(`Blocked CSRF state-change attempt with disallowed referer: ${refererOrigin}`);
         return res.status(403).json({
