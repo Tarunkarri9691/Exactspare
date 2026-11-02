@@ -152,6 +152,19 @@
   border-color: var(--color-orange-primary) !important;
 }
 
+.nav-customer-highlight {
+  color: #67e8f9 !important;
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+
+.nav-customer-highlight:hover,
+.nav-customer-highlight.active {
+  background: #0891b2 !important;
+  color: #ffffff !important;
+  border-color: #0891b2 !important;
+}
+
 /* Prominent Find Shops Button in Navbar */
 .nav-find-shops-highlight {
   font-weight: 700 !important;
@@ -551,6 +564,17 @@
   padding: 6px 12px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
+}
+
+.user-profile-badge-link {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-profile-badge-link:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 .user-badge-name {

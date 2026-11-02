@@ -22,6 +22,8 @@ export const validateOriginCSRF = (req, res, next) => {
   const allowedOrigins = [
     configuredFrontend,
     process.env.CLIENT_URL,
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
     ...configuredOrigins,
     'http://localhost:5173',
     'http://127.0.0.1:5173',

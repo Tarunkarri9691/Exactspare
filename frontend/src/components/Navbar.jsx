@@ -113,7 +113,17 @@ const Navbar = ({ onOpenAi }) => {
                 <span className="veh-arrow">▾</span>
               </button>
 
-              {/* If merchant or admin, show their portal link */}
+              {/* Role-Specific Portal Links */}
+              {user?.role === 'CUSTOMER' && (
+                <NavLink 
+                  to="/customer/dashboard" 
+                  className={({ isActive }) => `nav-link nav-portal-highlight-link nav-customer-highlight ${isActive ? 'active' : ''}`}
+                  title="Your Vehicle & Account Dashboard"
+                >
+                  👤 Customer Dashboard
+                </NavLink>
+              )}
+
               {user?.role === 'OWNER' && (
                 <NavLink 
                   to="/owner/dashboard" 
@@ -212,11 +222,16 @@ const Navbar = ({ onOpenAi }) => {
 
 
 
-                {/* User Profile Badge */}
-                <div className="user-profile-badge">
+                {/* User Profile Badge (Clickable link to dashboard) */}
+                <Link 
+                  to={getDashboardPath()} 
+                  className="user-profile-badge user-profile-badge-link"
+                  title={`Open ${user.name}'s Dashboard`}
+                  style={{ textDecoration: 'none' }}
+                >
                   <span className="user-badge-name">{user.name}</span>
                   <span className={`badge-role-tag role-${user.role.toLowerCase()}`}>{user.role}</span>
-                </div>
+                </Link>
 
                 <button 
                   type="button" 
@@ -298,6 +313,16 @@ const Navbar = ({ onOpenAi }) => {
                 >
                   🚗 Vehicle: <strong>{displayLabel}</strong>
                 </button>
+
+                {user?.role === 'CUSTOMER' && (
+                  <NavLink 
+                    to="/customer/dashboard" 
+                    className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                    onClick={closeMobileMenu}
+                  >
+                    👤 Customer Dashboard
+                  </NavLink>
+                )}
 
                 {user?.role === 'OWNER' && (
                   <NavLink 

@@ -130,15 +130,17 @@ export const checkAndProcessSubscriptionExpirations = async (filter = {}) => {
           timestamp: now
         });
         stats.expiredTransitions++;
-        await User.findByIdAndUpdate(sub.ownerId?._id || sub.ownerId, { hasActiveSubscription: false });
+        const owner = sub.ownerId;
+        const ownerId = owner?._id || owner;
+        if (ownerId) {
+          await User.findByIdAndUpdate(ownerId, { hasActiveSubscription: false });
+        }
 
         const notificationKey = `SUB_EXPIRY_${sub._id}_EXPIRED`;
         const alreadySent = Array.isArray(sub.remindersSent) && sub.remindersSent.includes('EXPIRED');
         const notificationExists = alreadySent || (await Notification.exists({ notificationKey }));
 
-        if (!notificationExists) {
-          const owner = sub.ownerId;
-          const ownerId = owner?._id || sub.ownerId;
+        if (!notificationExists && ownerId) {
           const ownerEmail = owner?.email;
           const ownerName = owner?.name;
 
@@ -210,7 +212,10 @@ export const checkAndProcessSubscriptionExpirations = async (filter = {}) => {
         }
 
         const owner = sub.ownerId;
-        const ownerId = owner?._id || sub.ownerId;
+        const ownerId = owner?._id || owner;
+        if (!ownerId) {
+          continue;
+        }
         const ownerEmail = owner?.email;
         const ownerName = owner?.name;
 

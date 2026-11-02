@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import AdminNav from '../components/AdminNav';
 import { 
   fetchAdminApplications, 
-  fetchAdminApplicationById
+  fetchAdminApplicationById,
+  getImageUrl,
+  BACKEND_URL
 } from '../services/api';
 import LocationPickerMap from '../components/LocationPickerMap';
 import './AdminApplicationsPage.css';
@@ -392,12 +394,12 @@ const AdminApplicationsPage = () => {
                         {selectedApp.shopImagePaths.map((imgPath, idx) => (
                           <a
                             key={idx}
-                            href={`http://localhost:5000/${imgPath}`}
+                            href={getImageUrl(imgPath)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="gallery-item"
                           >
-                            <img src={`http://localhost:5000/${imgPath}`} alt="Storefront" />
+                            <img src={getImageUrl(imgPath)} alt="Storefront" />
                             <span>View Full Image ↗</span>
                           </a>
                         ))}
@@ -426,7 +428,7 @@ const AdminApplicationsPage = () => {
                                 <span className="doc-storage-note">Secure Path: {docPath}</span>
                               </div>
                               <a
-                                href={`http://localhost:5000/api/shop-applications/${selectedApp._id}/documents/${filename}`}
+                                href={`${BACKEND_URL}/api/shop-applications/${selectedApp._id}/documents/${filename}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn btn-outline inspect-doc-btn"

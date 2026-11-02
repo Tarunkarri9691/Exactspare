@@ -41,11 +41,22 @@ const LoginPage = () => {
     };
   }, [isPortalMenuOpen]);
 
+  // Helper to ensure redirect destinations match the user's authenticated role
+  const isPathAllowedForRole = (path, role) => {
+    if (!path || typeof path !== 'string') return false;
+    const cleanPath = path.toLowerCase();
+    if (cleanPath.startsWith('/unauthorized') || cleanPath.startsWith('/login') || cleanPath === '/') return false;
+    if (cleanPath.startsWith('/owner') && role !== 'OWNER') return false;
+    if (cleanPath.startsWith('/admin') && role !== 'ADMIN') return false;
+    if (cleanPath.startsWith('/customer') && role !== 'CUSTOMER') return false;
+    return true;
+  };
+
   // If already authenticated, redirect to destination, dashboard, or home
   useEffect(() => {
     if (user) {
       const fromPath = location.state?.from?.pathname;
-      if (fromPath && !fromPath.startsWith('/unauthorized') && fromPath !== '/login') {
+      if (fromPath && isPathAllowedForRole(fromPath, user.role)) {
         navigate(fromPath, { replace: true });
       } else {
         switch (user.role) {
@@ -56,7 +67,7 @@ const LoginPage = () => {
             navigate('/owner/dashboard', { replace: true });
             break;
           default:
-            navigate('/', { replace: true });
+            navigate('/customer/dashboard', { replace: true });
             break;
         }
       }
@@ -112,13 +123,24 @@ const LoginPage = () => {
       const res = await login({ email: trimmedEmail, password });
 
       if (res.success && res.user) {
+        // Enforce strict portal-to-role matching so each portal only admits its intended role
         if (selectedPortal === 'admin' && res.user.role !== 'ADMIN') {
           setErrorMessage('Access denied: This account does not possess administrator privileges.');
           return;
         }
 
+        if (selectedPortal === 'owner' && res.user.role !== 'OWNER') {
+          setErrorMessage('Access denied: You are signed into a Customer account. Please switch to the "Customer Sign In" portal.');
+          return;
+        }
+
+        if (selectedPortal === 'customer' && res.user.role !== 'CUSTOMER') {
+          setErrorMessage('Access denied: You are signed into a Shop Owner account. Please switch to the "Shop Owner Sign In" portal.');
+          return;
+        }
+
         const fromPath = location.state?.from?.pathname;
-        if (fromPath && !fromPath.startsWith('/unauthorized')) {
+        if (fromPath && isPathAllowedForRole(fromPath, res.user.role)) {
           navigate(fromPath, { replace: true });
         } else if (res.user.role === 'ADMIN') {
           navigate('/admin/dashboard', { replace: true });

@@ -136,6 +136,8 @@ function App() {
                           <Route path="shops/:id/directions" element={<ShopDirectionsPage />} />
                           <Route path="parts" element={<PublicPartsPage />} />
                           <Route path="parts/:id" element={<PartDetailsPage />} />
+                          <Route path="wishlist" element={<WishlistPage />} />
+                          <Route path="settings" element={<CustomerSettingsPage />} />
                           <Route path="cart" element={<Navigate to="/parts" replace />} />
                           <Route path="notifications" element={<NotificationsPage />} />
                           <Route path="support" element={<CustomerSupportPage />} />
@@ -148,11 +150,9 @@ function App() {
 
                         {/* Role-Protected Customer Routes */}
                         <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
-                          <Route path="wishlist" element={<WishlistPage />} />
                           <Route path="customer/dashboard" element={<CustomerDashboardPage />} />
                           <Route path="customer/enquiries" element={<CustomerEnquiriesPage />} />
                           <Route path="enquiries" element={<CustomerEnquiriesPage />} />
-                          <Route path="settings" element={<CustomerSettingsPage />} />
                           <Route path="customer/settings" element={<CustomerSettingsPage />} />
                           <Route path="checkout" element={<Navigate to="/parts" replace />} />
                           <Route path="orders" element={<Navigate to="/parts" replace />} />

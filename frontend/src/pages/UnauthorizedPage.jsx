@@ -70,7 +70,7 @@ const UnauthorizedPage = () => {
 
           <p className="unauthorized-desc">
             {isCustomerNeedingOwner
-              ? 'You are currently signed in with a Customer account, but the Shop Owner Portal requires a Shop Owner role.'
+              ? 'You are signed in with an active Customer account. The Shop Owner Portal is strictly reserved for auto parts merchants who manage store listings and inventory.'
               : 'You do not have the required permissions to access this page or endpoint on EXACTSPARE.'}
           </p>
 
@@ -83,7 +83,7 @@ const UnauthorizedPage = () => {
             </div>
             {requiredRoles.length > 0 && (
               <div className="context-row">
-                <span className="context-label">Required Role(s):</span>
+                <span className="context-label">Required Role:</span>
                 <span className="required-roles-text">{requiredRoles.join(' or ')}</span>
               </div>
             )}
@@ -97,35 +97,59 @@ const UnauthorizedPage = () => {
 
           {isCustomerNeedingOwner ? (
             <div className="unauthorized-actions-stacked" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-              <button
-                type="button"
+              {/* Primary Customer Actions */}
+              <Link
+                to="/customer/dashboard"
                 className="btn btn-primary"
-                style={{ padding: '13px 20px', fontSize: '1rem', fontWeight: 700 }}
-                onClick={handleSwitchToOwner}
-                disabled={switching}
-                id="switch-to-owner-btn"
+                style={{ padding: '13px 20px', fontSize: '1rem', fontWeight: 700, textAlign: 'center', textDecoration: 'none' }}
+                id="unauth-customer-dash-btn"
               >
-                {switching ? 'Switching to Shop Owner...' : '⚡ Switch This Account to Shop Owner'}
-              </button>
+                👤 Continue to Customer Dashboard →
+              </Link>
 
-              <button
-                type="button"
-                className="btn btn-outline"
-                style={{ padding: '12px 18px', fontWeight: 600 }}
-                onClick={handleLogoutAndLogin}
-                id="signout-to-owner-login-btn"
-              >
-                🚪 Sign Out & Log In with Another Account
-              </button>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <Link
+                  to="/parts"
+                  className="btn btn-outline"
+                  style={{ padding: '11px 14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}
+                >
+                  🔍 Browse Parts
+                </Link>
+                <Link
+                  to="/shops"
+                  className="btn btn-outline"
+                  style={{ padding: '11px 14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}
+                >
+                  📍 Find Shops
+                </Link>
+              </div>
 
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '6px' }}>
-                <Link to={getDashboardLink()} className="btn btn-sm btn-ghost" style={{ textDecoration: 'underline', color: '#64748b' }}>
-                  Return to Customer Dashboard
-                </Link>
-                <span style={{ color: '#cbd5e1' }}>•</span>
-                <Link to="/" className="btn btn-sm btn-ghost" style={{ textDecoration: 'underline', color: '#64748b' }}>
-                  Back to Home
-                </Link>
+              {/* Merchant Options Divider */}
+              <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center' }}>
+                  Are you an auto spare parts vendor?
+                </span>
+
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ padding: '10px 16px', fontSize: '0.9rem', borderColor: '#f97316', color: '#ea580c' }}
+                  onClick={handleSwitchToOwner}
+                  disabled={switching}
+                  id="switch-to-owner-btn"
+                >
+                  {switching ? 'Upgrading Account...' : '⚡ Switch This Account to Shop Owner'}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ fontSize: '0.88rem', color: '#64748b' }}
+                  onClick={handleLogoutAndLogin}
+                  id="signout-to-owner-login-btn"
+                >
+                  🚪 Sign Out & Log In as Another User
+                </button>
               </div>
             </div>
           ) : (
