@@ -77,10 +77,13 @@ const startServer = async () => {
   process.on('SIGINT', () => handleShutdown('SIGINT'));
 };
 
-startServer().catch((err) => {
-  logger.error('Failed to start server:', err);
-  process.exit(1);
-});
+// Start standalone HTTP listener only when NOT running in serverless (e.g., local development or standalone container)
+if (!process.env.VERCEL) {
+  startServer().catch((err) => {
+    logger.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
 
 export default app;
 export { app };

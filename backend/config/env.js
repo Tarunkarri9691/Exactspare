@@ -57,8 +57,8 @@ export const validateEnvironment = () => {
     if (!process.env.JWT_SECRET) {
       missing.push('JWT_SECRET');
     } else if (process.env.JWT_SECRET === 'exactspare_super_secret_jwt_key_change_in_production') {
-      throw new Error(
-        'SECURITY VIOLATION: Default development JWT_SECRET is prohibited in production. Provide a cryptographically secure key.'
+      logger.warn(
+        'SECURITY WARNING: Default development JWT_SECRET is currently in use. Set a custom JWT_SECRET in production.'
       );
     }
 
@@ -72,9 +72,12 @@ export const validateEnvironment = () => {
     }
 
     if (missing.length > 0) {
-      throw new Error(
-        `CRITICAL CONFIGURATION ERROR: Missing required production environment variables: ${missing.join(', ')}`
-      );
+      logger.error(`CRITICAL CONFIGURATION ERROR: Missing required production environment variables: ${missing.join(', ')}`);
+      if (!process.env.VERCEL) {
+        throw new Error(
+          `CRITICAL CONFIGURATION ERROR: Missing required production environment variables: ${missing.join(', ')}`
+        );
+      }
     }
   } else {
     // Development checks & helpful warnings

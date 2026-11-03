@@ -26,19 +26,13 @@ export const getDatabaseStatus = () => {
   };
 };
 
-/**
- * Connect to MongoDB instance using MONGODB_URI or MONGO_URI environment variable.
- * Gracefully handles missing URI or connection failures without crashing the application.
- */
-export const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+let listenersRegistered = false;
+let connectingPromise = null;
 
-  if (!uri || uri.trim() === '') {
-    logger.warn('MONGODB_URI (or MONGO_URI) is not defined in environment variables. Database connection skipped.');
-    return false;
-  }
+const setupListeners = () => {
+  if (listenersRegistered) return;
+  listenersRegistered = true;
 
-  // Setup connection event listeners
   mongoose.connection.on('connected', () => {
     logger.info(`MongoDB connected successfully to ${mongoose.connection.host}/${mongoose.connection.name}`);
   });
@@ -50,21 +44,50 @@ export const connectDB = async () => {
   mongoose.connection.on('disconnected', () => {
     logger.warn('MongoDB connection disconnected');
   });
+};
 
-  try {
-    logger.info('Attempting to connect to MongoDB...');
-    await mongoose.connect(uri, {
-      dbName: 'exactspare',
-      serverSelectionTimeoutMS: 20000, // 20 seconds timeout for Atlas DNS/TLS handshake
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      socketTimeoutMS: 45000 // Close sockets after 45 seconds of inactivity
-    });
+/**
+ * Connect to MongoDB instance using MONGODB_URI or MONGO_URI environment variable.
+ * Gracefully handles missing URI or connection failures without crashing the application.
+ * Caches connection promise to optimize serverless cold starts.
+ */
+export const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
     return true;
-  } catch (error) {
-    logger.error(`Failed to connect to MongoDB: ${error.message}`);
-    // Do not crash the entire process so that health endpoints still report accurate status
+  }
+
+  if (connectingPromise) {
+    return connectingPromise;
+  }
+
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+  if (!uri || uri.trim() === '') {
+    logger.warn('MONGODB_URI (or MONGO_URI) is not defined in environment variables. Database connection skipped.');
     return false;
   }
+
+  setupListeners();
+
+  connectingPromise = (async () => {
+    try {
+      logger.info('Attempting to connect to MongoDB...');
+      await mongoose.connect(uri, {
+        dbName: 'exactspare',
+        serverSelectionTimeoutMS: 20000, // 20 seconds timeout for Atlas DNS/TLS handshake
+        maxPoolSize: 10, // Maintain up to 10 socket connections
+        socketTimeoutMS: 45000 // Close sockets after 45 seconds of inactivity
+      });
+      return true;
+    } catch (error) {
+      logger.error(`Failed to connect to MongoDB: ${error.message}`);
+      return false;
+    } finally {
+      connectingPromise = null;
+    }
+  })();
+
+  return connectingPromise;
 };
 
 export default connectDB;

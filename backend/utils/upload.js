@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { logger } from './logger.js';
@@ -8,17 +9,25 @@ import { logger } from './logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Absolute directory paths
-const BASE_UPLOADS_DIR = path.resolve(__dirname, '..', 'uploads');
+// Absolute directory paths - on serverless/read-only environments (like Vercel), use os.tmpdir()
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const BASE_UPLOADS_DIR = isServerless
+  ? path.join(os.tmpdir(), 'exactspare-uploads')
+  : path.resolve(__dirname, '..', 'uploads');
+
 const SHOPS_DIR = path.join(BASE_UPLOADS_DIR, 'shops');
 const PARTS_DIR = path.join(BASE_UPLOADS_DIR, 'parts');
 const DOCUMENTS_DIR = path.join(BASE_UPLOADS_DIR, 'documents');
 const TEMP_DIR = path.join(BASE_UPLOADS_DIR, 'temp');
 
-// Ensure upload directories exist
+// Ensure upload directories exist safely without throwing on read-only environments
 [SHOPS_DIR, PARTS_DIR, DOCUMENTS_DIR, TEMP_DIR].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (err) {
+    logger.warn(`Could not create directory ${dir}: ${err.message}`);
   }
 });
 

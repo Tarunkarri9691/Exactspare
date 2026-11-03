@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Backend API for EXACTSPARE - Vehicle Spare Parts Finder",
   "type": "module",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",

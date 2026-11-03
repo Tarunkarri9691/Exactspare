@@ -37,6 +37,8 @@ import { performanceLogger } from './middleware/performanceLogger.js';
 import { SHOPS_DIR, PARTS_DIR } from './utils/upload.js';
 import { logger } from './utils/logger.js';
 import requireDatabaseConnection from './middleware/dbCheckMiddleware.js';
+import mongoose from 'mongoose';
+import { connectDB } from './config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -151,6 +153,14 @@ app.get('/', (req, res) => {
       recommendations: '/api/recommendations'
     }
   });
+});
+
+// Ensure database connection is active or initiated on serverless/Vercel
+app.use('/api', (req, res, next) => {
+  if (mongoose.connection.readyState === 0) {
+    connectDB().catch((err) => logger.error('Auto connectDB failed:', err.message));
+  }
+  next();
 });
 
 // Mount API Routes
