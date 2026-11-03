@@ -312,3 +312,35 @@
   color: var(--color-navy-primary);
   margin: 12px 0 6px;
 }
+
+@media (max-width: 600px) {
+  .public-shop-details-page {
+    padding: 16px 0 60px;
+  }
+  .shop-hero-card {
+    padding: 16px;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .hero-shop-title {
+    font-size: 1.55rem;
+    word-break: break-word;
+  }
+  .shop-location-section {
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .catalog-search-wrap {
+    width: 100%;
+  }
+  .catalog-search-wrap input {
+    width: 100%;
+  }
+  .catalog-filters-bar {
+    width: 100%;
+  }
+  .parts-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

@@ -391,6 +391,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -398,15 +400,17 @@
   font-size: 12px;
   font-weight: 700;
   color: #16a34a;
+  white-space: nowrap;
 }
 
 .shop-category-tag {
   background: #f1f5f9;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
   color: #475569;
+  white-space: nowrap;
 }
 
 .shop-panel-name {
@@ -414,6 +418,7 @@
   font-weight: 800;
   color: var(--color-navy-primary, #0f172a);
   margin: 0 0 16px;
+  word-break: break-word;
 }
 
 .shop-panel-details {
@@ -445,6 +450,7 @@
   margin: 0;
   color: #64748b;
   line-height: 1.4;
+  word-break: break-word;
 }
 
 .phone-link {
@@ -457,6 +463,21 @@
   text-decoration: underline;
 }
 
+.shop-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.shop-panel-actions .btn {
+  width: 100% !important;
+  white-space: normal !important;
+  text-align: center;
+  line-height: 1.35;
+  padding: 11px 14px;
+}
+
 /* Map Frame Card */
 .map-frame-card {
   position: relative;
@@ -465,6 +486,7 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  max-width: 100%;
 }
 
 .interactive-directions-map {
@@ -488,13 +510,14 @@
   backdrop-filter: blur(4px);
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   z-index: 999;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   font-size: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-width: 260px;
 }
 
 .legend-row {
@@ -502,6 +525,14 @@
   align-items: center;
   gap: 8px;
   color: #0f172a;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.legend-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .legend-indicator {
@@ -509,6 +540,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .origin-indicator {
@@ -557,6 +589,81 @@
   background: var(--color-navy-primary, #0f172a);
   color: #ffffff;
   border-color: var(--color-navy-primary, #0f172a);
+}
+
+@media (max-width: 600px) {
+  .shop-directions-page {
+    padding: 12px 0 40px;
+  }
+
+  .directions-main-container {
+    padding: 0 10px;
+  }
+
+  .directions-grid-layout {
+    gap: 16px;
+  }
+
+  .directions-panel-card {
+    padding: 14px 12px;
+    border-radius: 10px;
+  }
+
+  .directions-page-title {
+    font-size: 20px;
+  }
+
+  .interactive-directions-map {
+    height: 380px;
+    max-height: 55vh;
+  }
+
+  .map-legend-overlay {
+    top: 8px;
+    right: 8px;
+    max-width: calc(100% - 60px);
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .map-quick-bar {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .map-float-btn {
+    flex: 1;
+    min-width: 90px;
+    padding: 6px 8px;
+    font-size: 11px;
+    text-align: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 400px) {
+  .directions-page-title {
+    font-size: 18px;
+  }
+
+  .interactive-directions-map {
+    height: 340px;
+  }
+
+  .map-legend-overlay {
+    max-width: calc(100% - 56px);
+    font-size: 10px;
+  }
+
+  .map-float-btn {
+    font-size: 10.5px;
+    padding: 5px 6px;
+  }
 }
 
 /* Custom Marker Styling in Leaflet */

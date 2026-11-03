@@ -107,6 +107,23 @@ button, input, select, textarea {
   white-space: nowrap;
 }
 
+/* Universal Block Button */
+.btn-block {
+  display: flex !important;
+  width: 100% !important;
+  white-space: normal !important;
+  text-align: center;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+  .btn {
+    white-space: normal;
+    text-align: center;
+    max-width: 100%;
+  }
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
