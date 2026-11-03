@@ -466,7 +466,7 @@
   padding: 8px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 960px) {
   .mobile-toggle-btn {
     display: none;
   }
@@ -500,7 +500,7 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 960px) {
   .mobile-drawer {
     display: none;
   }

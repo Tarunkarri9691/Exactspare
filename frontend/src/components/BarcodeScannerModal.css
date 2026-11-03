@@ -459,3 +459,20 @@
   white-space: nowrap;
   font-size: 0.88rem;
 }
+
+@media (max-width: 480px) {
+  .scanner-modal-backdrop {
+    padding: 0.5rem;
+  }
+  .scanner-modal-content {
+    padding: 1.1rem 0.85rem;
+    max-height: 94vh;
+  }
+  .scanner-manual-form {
+    flex-direction: column;
+  }
+  .scanner-manual-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
