@@ -798,8 +798,13 @@
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
+  .auth-page-root {
+    padding: 0.75rem 0.5rem;
+  }
+
   .auth-terminal-card {
-    padding: 1.25rem 1rem;
+    padding: 1.15rem 1rem;
+    border-radius: 16px;
   }
 
   .terminal-header-row {
@@ -814,14 +819,45 @@
   .btn-change-portal {
     width: 100%;
     justify-content: center;
+    min-height: 40px;
   }
 
   .portal-dropdown-menu {
     width: 100%;
   }
 
+  .quick-fill-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .quick-fill-buttons {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .btn-quick-fill {
+    flex: 1;
+    text-align: center;
+    padding: 0.45rem 0.5rem;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .terminal-footer {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+  }
+
+  .register-links-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }

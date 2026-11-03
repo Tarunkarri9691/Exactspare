@@ -159,3 +159,41 @@
   display: flex;
   gap: 10px;
 }
+
+@media (max-width: 480px) {
+  .veh-modal-backdrop {
+    padding: 10px;
+  }
+  .veh-modal-card {
+    border-radius: 12px;
+  }
+  .veh-modal-header {
+    padding: 14px 16px;
+  }
+  .veh-modal-body {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .veh-cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .veh-cat-btn {
+    padding: 7px 10px;
+    font-size: 0.78rem;
+  }
+  .veh-modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  .veh-footer-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .veh-footer-actions .btn {
+    flex: 1;
+  }
+  .btn-outline-veh {
+    width: 100%;
+  }
+}

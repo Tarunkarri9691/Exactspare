@@ -155,3 +155,15 @@
   color: #64748B;
   font-size: 0.75rem;
 }
+
+@media (max-width: 480px) {
+  .footer-content {
+    padding-top: 2rem;
+    padding-bottom: 1.5rem;
+    gap: 1.5rem;
+  }
+  .footer-brand-logo-img {
+    height: 38px;
+    max-width: 160px;
+  }
+}

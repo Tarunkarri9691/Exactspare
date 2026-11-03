@@ -617,3 +617,53 @@
   font-size: var(--text-sm);
 }
 
+/* Mobile Responsive Enhancements (< 480px) */
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 2rem 0 1.5rem;
+  }
+  .hero-title {
+    font-size: 1.75rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 12px;
+  }
+  .hero-description {
+    font-size: 0.92rem !important;
+    line-height: 1.5 !important;
+    margin-bottom: 16px;
+  }
+  .hero-cta-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .hero-btn-shops,
+  .hero-btn-vehicle {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .home-vehicle-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .home-shops-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .section-title {
+    font-size: 1.4rem;
+  }
+  .popular-cat-chip {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .roles-grid {
+    gap: 14px;
+  }
+  .role-card {
+    padding: 20px 16px;
+  }
+}
+

@@ -460,3 +460,52 @@
     align-items: stretch;
   }
 }
+
+@media (max-width: 640px) {
+  .shops-search-bar-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-input-group,
+  .city-input-group,
+  .part-input-group {
+    min-width: 100%;
+    width: 100%;
+  }
+  .search-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .shops-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .card-actions-grid {
+    flex-direction: column;
+    width: 100%;
+  }
+  .card-actions-grid .btn-primary,
+  .btn-directions {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shops-hero-title {
+    font-size: 1.55rem;
+  }
+  .shops-hero-subtitle {
+    font-size: 0.92rem;
+  }
+  .location-btn-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-gps {
+    width: 100%;
+    justify-content: center;
+  }
+}

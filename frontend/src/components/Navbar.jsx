@@ -28,6 +28,36 @@ const Navbar = ({ onOpenAi }) => {
     setNotifDropdownOpen(false);
   };
 
+  // Close mobile drawer on route navigation
+  React.useEffect(() => {
+    setMobileMenuOpen(false);
+    setNotifDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile drawer on Escape key press
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+        setNotifDropdownOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Lock background scroll when mobile drawer is open
+  React.useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   const toggleNotifDropdown = () => {
     setNotifDropdownOpen((prev) => !prev);
   };
@@ -256,20 +286,27 @@ const Navbar = ({ onOpenAi }) => {
           </div>
         </nav>
 
-        {/* Mobile Menu Toggle Button */}
-        {isAuthenticated && (
-          <button 
-            className="mobile-toggle-btn" 
-            onClick={toggleMobileMenu}
-            aria-label="Toggle navigation menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            <span className={`hamburger-bar ${mobileMenuOpen ? 'open' : ''}`}></span>
-            <span className={`hamburger-bar ${mobileMenuOpen ? 'open' : ''}`}></span>
-            <span className={`hamburger-bar ${mobileMenuOpen ? 'open' : ''}`}></span>
-          </button>
-        )}
+        {/* Mobile Menu Toggle Button (Visible on mobile for all visitors) */}
+        <button 
+          className="mobile-toggle-btn" 
+          onClick={toggleMobileMenu}
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          <span className={`hamburger-bar ${mobileMenuOpen ? 'open' : ''}`}></span>
+          <span className={`hamburger-bar ${mobileMenuOpen ? 'open' : ''}`}></span>
+          <span className={`hamburger-bar ${mobileMenuOpen ? 'open' : ''}`}></span>
+        </button>
       </div>
+
+      {/* Mobile Drawer Overlay Backdrop */}
+      {mobileMenuOpen && (
+        <div 
+          className="mobile-drawer-backdrop" 
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
@@ -497,13 +534,57 @@ const Navbar = ({ onOpenAi }) => {
                 </button>
               </>
             ) : (
-              <NavLink 
-                to="/login" 
-                className="btn btn-primary mobile-signin-btn" 
-                onClick={closeMobileMenu}
-              >
-                Sign In
-              </NavLink>
+              <div className="mobile-guest-links">
+                <div className="mobile-guest-header">
+                  <span>Sign In Portals</span>
+                </div>
+                <NavLink 
+                  to="/login?portal=customer" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive && location.search.includes('customer') ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  👤 Vehicle Owner (Customer) Sign In
+                </NavLink>
+                <NavLink 
+                  to="/login?portal=owner" 
+                  className={({ isActive }) => `mobile-nav-link nav-portal-highlight-link ${isActive && location.search.includes('owner') ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  🏬 Merchant / Shop Owner Sign In
+                </NavLink>
+                <NavLink 
+                  to="/login?portal=admin" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive && location.search.includes('admin') ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  🛡️ Administrator Sign In
+                </NavLink>
+
+                <div className="mobile-section-divider">
+                  <span>New to EXACTSPARE?</span>
+                </div>
+                <NavLink 
+                  to="/register" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  📝 Create Customer Account
+                </NavLink>
+                <NavLink 
+                  to="/register-owner" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  🚀 Register as Shop Owner
+                </NavLink>
+                <NavLink 
+                  to="/shop-application" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} 
+                  onClick={closeMobileMenu}
+                >
+                  📑 Apply for Shop Verification
+                </NavLink>
+              </div>
             )}
           </div>
         </div>

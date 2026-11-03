@@ -518,16 +518,21 @@
     padding: 14px;
   }
   .main-image-viewport {
-    height: 280px;
+    height: 250px;
   }
   .pdp-cart-buttons {
     flex-direction: column;
+    gap: 10px;
   }
   .add-to-cart-btn,
   .buy-now-btn,
   .pdp-wishlist-btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+  }
+  .product-page-title {
+    font-size: 1.45rem !important;
   }
   .part-title {
     font-size: 1.45rem;
