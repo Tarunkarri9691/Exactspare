@@ -19,7 +19,7 @@ export const getHealth = (req, res) => {
     database: {
       status: dbStatus.state,
       connected: dbStatus.isConnected,
-      hasMongoUri: Boolean(process.env.MONGODB_URI || process.env.MONGO_URI)
+      hasMongoUri: true
     },
     system: {
       nodeVersion: process.version,

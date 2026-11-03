@@ -15,7 +15,10 @@ export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
-  mongodbUri: process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/exactspare',
+  mongodbUri:
+    process.env.MONGODB_URI ||
+    process.env.MONGO_URI ||
+    'mongodb+srv://tarunkarri48_db_user:Tarun123@cluster0.jqvpdqf.mongodb.net/exactspare?retryWrites=true&w=majority',
   jwtSecret: process.env.JWT_SECRET || 'exactspare_super_secret_jwt_key_change_in_production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   frontendUrl:

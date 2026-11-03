@@ -58,9 +58,12 @@ export const getDatabaseStatus = () => {
   };
 };
 
+const FALLBACK_MONGODB_URI =
+  'mongodb+srv://tarunkarri48_db_user:Tarun123@cluster0.jqvpdqf.mongodb.net/exactspare?retryWrites=true&w=majority';
+
 /**
- * Connect to MongoDB instance using MONGODB_URI or MONGO_URI environment variable.
- * Gracefully handles missing URI or connection failures without crashing the application.
+ * Connect to MongoDB instance using MONGODB_URI or MONGO_URI environment variable (with Atlas fallback).
+ * Gracefully handles connection failures without crashing the application.
  * Caches connection promise to optimize serverless cold starts.
  */
 export const connectDB = async () => {
@@ -72,7 +75,7 @@ export const connectDB = async () => {
     return connectingPromise;
   }
 
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || FALLBACK_MONGODB_URI;
 
   if (!uri || uri.trim() === '') {
     lastConnectionError = new Error('MONGODB_URI (or MONGO_URI) is not defined in environment variables');
