@@ -1,4 +1,4 @@
-import { getDatabaseStatus } from '../config/db.js';
+import { getDatabaseStatus, connectDB } from '../config/db.js';
 
 /**
  * Controller for general API health check
@@ -18,7 +18,8 @@ export const getHealth = (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     database: {
       status: dbStatus.state,
-      connected: dbStatus.isConnected
+      connected: dbStatus.isConnected,
+      hasMongoUri: Boolean(process.env.MONGODB_URI || process.env.MONGO_URI)
     },
     system: {
       nodeVersion: process.version,
@@ -32,10 +33,11 @@ export const getHealth = (req, res) => {
  * Controller for MongoDB connection health check
  * @route GET /api/health/db
  */
-export const getDatabaseHealth = (req, res) => {
+export const getDatabaseHealth = async (req, res) => {
+  const isConnected = await connectDB();
   const dbStatus = getDatabaseStatus();
 
-  if (dbStatus.isConnected) {
+  if (dbStatus.isConnected || isConnected) {
     return res.status(200).json({
       status: 'ok',
       database: dbStatus,
@@ -45,7 +47,7 @@ export const getDatabaseHealth = (req, res) => {
 
   return res.status(503).json({
     status: 'unavailable',
-    message: 'MongoDB is currently not connected or unavailable.',
+    message: dbStatus.lastError || 'MongoDB is currently not connected or unavailable.',
     database: dbStatus,
     timestamp: new Date().toISOString()
   });
