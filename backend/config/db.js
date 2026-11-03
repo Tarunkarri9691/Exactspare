@@ -1,29 +1,19 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
 import { logger } from '../utils/logger.js';
+
+// Configure reliable DNS servers to resolve MongoDB Atlas SRV records without querySrv ETIMEOUT
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch {
+  // Gracefully fallback if environment prohibits changing DNS servers
+}
 
 const STATE_NAMES = {
   0: 'disconnected',
   1: 'connected',
   2: 'connecting',
   3: 'disconnecting'
-};
-
-/**
- * Returns current MongoDB connection state information
- */
-export const getDatabaseStatus = () => {
-  const readyState = mongoose.connection.readyState;
-  const state = STATE_NAMES[readyState] || 'unknown';
-  const isConnected = readyState === 1;
-
-  return {
-    state,
-    readyState,
-    isConnected,
-    host: isConnected ? mongoose.connection.host : null,
-    port: isConnected ? mongoose.connection.port : null,
-    name: isConnected ? mongoose.connection.name : null
-  };
 };
 
 let listenersRegistered = false;

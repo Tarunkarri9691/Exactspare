@@ -1,6 +1,13 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables before any other imports that might read them
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from backend/.env or root .env
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 dotenv.config();
 
 
@@ -26,8 +33,8 @@ const startServer = async () => {
 
   logger.info(`Starting EXACTSPARE Backend in ${config.nodeEnv} mode...`);
 
-  // Attempt database connection without halting server on failure
-  await connectDB();
+  // Attempt database connection in background without delaying server startup
+  connectDB().catch((err) => logger.error('Initial DB connection error:', err.message));
 
   // Start background recurring subscription expiry tracker & reminder service
   startSubscriptionScheduler();
