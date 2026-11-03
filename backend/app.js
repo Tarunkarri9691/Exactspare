@@ -67,6 +67,7 @@ const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .filter(Boolean);
 
 const allowedOriginsList = [
+  'https://exactspare.vercel.app',
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
   process.env.RENDER_EXTERNAL_URL,
@@ -88,6 +89,10 @@ app.use(cors({
     // Always allow localhost / 127.0.0.1 on any port during development
     const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(originClean);
     if (isLocalhost) {
+      return callback(null, true);
+    }
+    // Allow all *.vercel.app deployment origins
+    if (originClean.endsWith('.vercel.app')) {
       return callback(null, true);
     }
     // Allow configured production origins

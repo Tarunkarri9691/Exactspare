@@ -13,60 +13,67 @@ export const validateOriginCSRF = (req, res, next) => {
 
   const origin = req.headers.origin;
   const referer = req.headers.referer;
-  const configuredFrontend = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const requestHost = (req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
 
-  const allowedOrigins = [
-    configuredFrontend,
-    process.env.CLIENT_URL,
-    process.env.RENDER_EXTERNAL_URL,
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-    ...configuredOrigins,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:4173',
-    'http://127.0.0.1:4173'
-  ]
-    .filter(Boolean)
-    .map((o) => o.replace(/\/+$/, '').toLowerCase());
+  // Helper to test if an origin/referer string is valid and authorized
+  const isOriginAuthorized = (urlStr) => {
+    if (!urlStr) return true;
+    try {
+      const url = new URL(urlStr);
+      const cleanOrigin = `${url.protocol}//${url.host}`.toLowerCase();
+      const hostLower = url.host.toLowerCase();
 
-  // Check if origin is localhost on any port in development
-  const isLocalDev =
-    process.env.NODE_ENV !== 'production' &&
-    ((origin && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) ||
-      (referer && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(referer)));
+      // 1. Allow localhost / 127.0.0.1 in development or testing
+      if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(hostLower)) {
+        return true;
+      }
+
+      // 2. Allow same-origin requests (frontend & backend hosted on the same domain / reverse proxy)
+      if (requestHost && (hostLower === requestHost || cleanOrigin === `https://${requestHost}` || cleanOrigin === `http://${requestHost}`)) {
+        return true;
+      }
+
+      // 3. Allow all Vercel deployment URLs (*.vercel.app)
+      if (hostLower.endsWith('.vercel.app')) {
+        return true;
+      }
+
+      // 4. Allow configured production origins
+      const configuredOrigins = [
+        'https://exactspare.vercel.app',
+        process.env.FRONTEND_URL,
+        process.env.CLIENT_URL,
+        process.env.RENDER_EXTERNAL_URL,
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+        ...(process.env.CORS_ALLOWED_ORIGINS || '').split(',').map((s) => s.trim())
+      ]
+        .filter(Boolean)
+        .map((o) => o.replace(/\/+$/, '').toLowerCase());
+
+      return configuredOrigins.includes(cleanOrigin);
+    } catch {
+      return false;
+    }
+  };
 
   // If request contains an Origin header (standard for CORS fetch/XHR)
-  if (origin) {
-    const originClean = origin.replace(/\/+$/, '').toLowerCase();
-    if (!isLocalDev && !allowedOrigins.includes(originClean)) {
-      logger.warn(`Blocked CSRF state-change attempt with disallowed origin: ${origin}`);
-      return res.status(403).json({
-        status: 'error',
-        statusCode: 403,
-        message: 'Forbidden: Origin validation failed (CSRF protection).'
-      });
-    }
-  } 
+  if (origin && !isOriginAuthorized(origin)) {
+    logger.warn(`Blocked CSRF state-change attempt with disallowed origin: ${origin} (Host: ${requestHost})`);
+    return res.status(403).json({
+      status: 'error',
+      statusCode: 403,
+      message: 'Forbidden: Origin validation failed (CSRF protection).'
+    });
+  }
+
   // If no Origin but Referer is present
-  else if (referer) {
-    try {
-      const refererUrl = new URL(referer);
-      const refererOrigin = `${refererUrl.protocol}//${refererUrl.host}`.replace(/\/+$/, '').toLowerCase();
-      if (!isLocalDev && !allowedOrigins.includes(refererOrigin)) {
-        logger.warn(`Blocked CSRF state-change attempt with disallowed referer: ${refererOrigin}`);
-        return res.status(403).json({
-          status: 'error',
-          statusCode: 403,
-          message: 'Forbidden: Referer validation failed (CSRF protection).'
-        });
-      }
-    } catch {
-      // Ignore URL parse error on non-standard referers
-    }
+  if (!origin && referer && !isOriginAuthorized(referer)) {
+    logger.warn(`Blocked CSRF state-change attempt with disallowed referer: ${referer} (Host: ${requestHost})`);
+    return res.status(403).json({
+      status: 'error',
+      statusCode: 403,
+      message: 'Forbidden: Referer validation failed (CSRF protection).'
+    });
   }
 
   next();

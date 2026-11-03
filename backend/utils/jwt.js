@@ -3,11 +3,7 @@ import jwt from 'jsonwebtoken';
 const COOKIE_NAME = 'exactspare_token';
 
 const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET is not configured in environment variables');
-  }
-  return secret;
+  return process.env.JWT_SECRET || 'exactspare_super_secret_jwt_key_change_in_production';
 };
 
 /**

@@ -14,7 +14,9 @@ export const config = {
     process.env.FRONTEND_URL ||
     process.env.CLIENT_URL ||
     process.env.RENDER_EXTERNAL_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173'),
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : (process.env.NODE_ENV === 'production' ? 'https://exactspare.vercel.app' : 'http://localhost:5173')),
   corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
